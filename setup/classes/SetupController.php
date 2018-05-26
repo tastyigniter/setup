@@ -542,7 +542,6 @@ class SetupController
         ]);
 
         // These parameter are no longer in use
-        params()->forget('default_themes');
         params()->forget('main_address');
 
         params()->save();
