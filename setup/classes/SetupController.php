@@ -274,7 +274,8 @@ class SetupController
                     header('Content-Type: application/json');
                     die(json_encode($result));
                 }
-            } catch (Exception $ex) {
+            }
+            catch (Exception $ex) {
                 header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', TRUE, 500);
                 $this->writeLog('Handler error (%s): %s', $handler, $ex->getMessage());
                 $this->writeLog(['Trace log:', '%s'], $ex->getTraceAsString());
@@ -299,7 +300,8 @@ class SetupController
 
         try {
             $this->testDbConnection($config);
-        } catch (Exception $ex) {
+        }
+        catch (Exception $ex) {
             return FALSE;
         }
 
@@ -320,7 +322,8 @@ class SetupController
         try {
             $options = [SetupPDO::ATTR_ERRMODE => SetupPDO::ERRMODE_EXCEPTION];
             $db = new \SetupPDO($dsn, $username, $password, $options, $config);
-        } catch (PDOException $ex) {
+        }
+        catch (PDOException $ex) {
             throw new SetupException('Connection failed: '.$ex->getMessage());
         }
 
@@ -387,16 +390,7 @@ class SetupController
 
     protected function applyInstall()
     {
-        $params = [];
-
-        if ($themeCode = $this->post('code'))
-            $params['items'] = json_encode([
-                [
-                    'name'   => $themeCode,
-                    'type'   => 'theme',
-                    'action' => 'install',
-                ],
-            ]);
+        $params = $this->processInstallItems();
 
         if ($siteKey = $this->post('site_key'))
             $params['site_key'] = $siteKey;
@@ -406,7 +400,27 @@ class SetupController
         return $this->buildProcessSteps($response);
     }
 
-    protected function buildProcessSteps($meta)
+    protected function processInstallItems()
+    {
+        $params = $items = [];
+
+        if (!strlen($themeCode = $this->post('code')))
+            return $params;
+
+        if (is_array($dependencies = $this->post('require'))) {
+            foreach ($dependencies['data'] as $dependency) {
+                $items[] = ['name' => $dependency['code'], 'type' => $dependency['type']];
+            }
+        }
+
+        $items[] = ['name' => $themeCode, 'type' => 'theme'];
+
+        $params['items'] = $items;
+
+        return $params;
+    }
+
+    protected function buildProcessSteps($response)
     {
         $processSteps = [];
 
@@ -416,14 +430,14 @@ class SetupController
 
             if ($step == 'install') {
                 $processSteps[$step][] = [
-                    'items'   => $meta['data'],
+                    'items'   => $response['data'],
                     'process' => 'finishInstall',
                 ];
 
                 continue;
             }
 
-            foreach ($meta['data'] as $item) {
+            foreach ($response['data'] as $item) {
                 if ($item['type'] == 'core') {
                     $applySteps[] = array_merge([
                         'action'  => 'install',
@@ -831,7 +845,8 @@ class SetupController
 
             $this->writeLog('Request information: %s', print_r(curl_getinfo($curl), TRUE));
             curl_close($curl);
-        } catch (Exception $ex) {
+        }
+        catch (Exception $ex) {
             $this->writeLog('Failed to get server data (ignored): '.$ex->getMessage());
         }
 
@@ -840,7 +855,8 @@ class SetupController
 
         try {
             $_result = @json_decode($result, TRUE);
-        } catch (Exception $ex) {
+        }
+        catch (Exception $ex) {
         }
 
         if (!is_array($_result)) {
@@ -877,7 +893,8 @@ class SetupController
 
             curl_close($curl);
             fclose($fileStream);
-        } catch (Exception $ex) {
+        }
+        catch (Exception $ex) {
             $this->writeLog('Server responded with error: '.$ex->getMessage());
             throw new SetupException('Server responded with error: '.$ex->getMessage());
         }
