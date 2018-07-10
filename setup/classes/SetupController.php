@@ -473,8 +473,9 @@ class SetupController
         // Create the admin user if no admin exists.
         $this->createSuperUser();
 
-        if ($this->repository->get('settingsInstalled') === TRUE)
-            return $this->addSystemParameters();
+        $systemSettingsInstalled = $this->addSystemParameters();
+        if ($this->repository->get('settingsInstalled', FALSE) === TRUE)
+            return $systemSettingsInstalled;
 
         // Save the site configuration to the settings table
         $this->addSystemSettings();
@@ -533,9 +534,7 @@ class SetupController
 
     protected function addSystemSettings()
     {
-        $this->addSystemParameters();
-
-        $settings = (array)$this->getSettingsDetails();
+        $settings = $this->repository->get('settings');
 
         setting()->set($settings);
 
