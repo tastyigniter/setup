@@ -920,6 +920,10 @@ class SetupController
         curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params, '', '&'));
+        
+        // Used to skip SSL Check on Wamp Server which causes the Live Status Check to fail
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
 
         if (isset($params['site_key']) AND $siteKey = $params['site_key']) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
