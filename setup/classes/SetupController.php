@@ -7,14 +7,6 @@ class SetupController
 {
     const TI_ENDPOINT = 'https://api.tastyigniter.com/v2';
 
-    const COMPOSER_INSTALLER_URL = 'https://getcomposer.org/composer.phar';
-
-    const COMPOSER_EXTRACTED_PHAR = 'extracted_phar';
-
-    const COMPOSER_PHAR = 'composer.phar';
-
-    const COMPOSER_VENDOR = 'vendor';
-
     public $page;
 
     public $logFile;
@@ -28,6 +20,7 @@ class SetupController
         $this->logFile = SETUPPATH.'/setup.log';
         $this->writePostToLog();
 
+        $this->configRewrite = new ConfigRewrite;
         $this->repository = new SetupRepository(SETUPPATH.'/setup_config');
 
         // Execute post handler
@@ -40,6 +33,8 @@ class SetupController
             $this->page = new stdClass;
 
         $this->page->currentStep = 'requirement';
+        if (isset($_GET['skipConfig']) AND $_GET['skipConfig'] == 1)
+            $this->page->currentStep = 'install';
 
         return $this->page;
     }
@@ -174,11 +169,11 @@ class SetupController
 
         $this->repository->set('settings', [
             'site_location_mode' => $this->post('site_location_mode'),
-            'site_name'          => $siteName,
-            'site_email'         => $siteEmail,
-            'staff_name'         => $adminName,
-            'username'           => $username,
-            'password'           => $password,
+            'site_name' => $siteName,
+            'site_email' => $siteEmail,
+            'staff_name' => $adminName,
+            'username' => $username,
+            'password' => $password,
         ]);
 
         $result = $this->repository->save();
@@ -190,8 +185,8 @@ class SetupController
     public function onFetchItems()
     {
         return $this->requestRemoteData('items', [
-            'browse'  => 'popular',
-            'type'    => 'theme',
+            'browse' => 'popular',
+            'type' => 'theme',
             'include' => 'require',
         ]);
     }
@@ -207,9 +202,9 @@ class SetupController
         $params = [];
         if ($this->post('step') != 'complete' AND isset($item['code'])) {
             $params = [
-                'name'   => $item['code'],
-                'type'   => $item['type'],
-                'ver'    => $item['version'],
+                'name' => $item['code'],
+                'type' => $item['type'],
+                'ver' => $item['version'],
                 'action' => $item['action'],
             ];
         }
@@ -240,13 +235,18 @@ class SetupController
 
                 $this->repository->set('core', $item);
                 break;
+            case 'writeConfig':
+                $this->rewriteConfigFiles();
+                $result = TRUE;
+                break;
             case 'finishInstall':
-                $this->writeExampleFiles();
-
-                // Boot framework and run migration
+                // Run migration
                 $this->completeSetup();
                 $this->completeInstall();
                 $this->cleanUpAfterInstall();
+
+                $this->moveExampleFile('htaccess', null, 'backup');
+                $this->moveExampleFile('htaccess', 'example', null);
 
                 $result = admin_url('login');
                 break;
@@ -424,14 +424,14 @@ class SetupController
     {
         $processSteps = [];
 
-        foreach (['download', 'extract', 'install'] as $step) {
+        foreach (['download', 'extract', 'config', 'install'] as $step) {
 
             $applySteps = [];
 
-            if ($step == 'install') {
+            if (in_array($step, ['config', 'install'])) {
                 $processSteps[$step][] = [
-                    'items'   => $response['data'],
-                    'process' => 'finishInstall',
+                    'items' => $response['data'],
+                    'process' => $step == 'install' ? 'finishInstall' : 'writeConfig',
                 ];
 
                 continue;
@@ -440,7 +440,7 @@ class SetupController
             foreach ($response['data'] as $item) {
                 if ($item['type'] == 'core') {
                     $applySteps[] = array_merge([
-                        'action'  => 'install',
+                        'action' => 'install',
                         'process' => "{$step}Core",
                     ], $item);
                 }
@@ -448,7 +448,7 @@ class SetupController
                     $singularType = $item['type'];
 
                     $applySteps[] = array_merge([
-                        'action'  => 'install',
+                        'action' => 'install',
                         'process' => $step.ucfirst($singularType),
                     ], $item);
                 }
@@ -490,7 +490,7 @@ class SetupController
         $config = $this->repository->get('settings');
 
         \Admin\Models\Locations_model::insert([
-            'location_name'  => $config['site_name'],
+            'location_name' => $config['site_name'],
             'location_email' => $config['site_email'],
         ]);
     }
@@ -547,10 +547,10 @@ class SetupController
         $config = $this->repository->get('settings');
 
         params()->set([
-            'ti_setup'            => 'installed',
-            'ti_version'          => array_get($core, 'version'),
-            'sys_hash'            => array_get($core, 'hash'),
-            'site_key'            => $config['site_key'] ?? null,
+            'ti_setup' => 'installed',
+            'ti_version' => array_get($core, 'version'),
+            'sys_hash' => array_get($core, 'hash'),
+            'site_key' => $config['site_key'] ?? null,
             'default_location_id' => \Admin\Models\Locations_model::first()->location_id,
         ]);
 
@@ -629,23 +629,33 @@ class SetupController
         return FALSE;
     }
 
-    protected function writeExampleFiles()
+    protected function rewriteConfigFiles()
     {
-        $this->moveExampleFile('env', null, 'backup');
-        $this->moveExampleFile('env', 'example', null);
+        $this->bootFramework();
 
-        $exampleEnvFile = $this->baseDirectory.'/.env';
-        $contents = file_get_contents($exampleEnvFile);
+        if (!file_exists($this->configDirectory.'/database.php')
+            OR !file_exists($this->configDirectory.'/app.php'))
+            return;
 
-        foreach ($this->envReplacementPatterns() as $pattern => $replace) {
-            $contents = preg_replace($pattern, $replace, $contents);
-            putenv($replace);
-        }
+        $this->configRewrite->toFile(
+            $this->configDirectory.'/database.php',
+            array_dot([
+                'default' => 'mysql',
+                'connections' => [
+                    'mysql' => $this->repository->get('database')
+                ]
+            ])
+        );
 
-        file_put_contents($exampleEnvFile, $contents);
-
-        $this->moveExampleFile('htaccess', null, 'backup');
-        $this->moveExampleFile('htaccess', 'example', null);
+        $setting = $this->repository->get('settings');
+        $this->configRewrite->toFile(
+            $this->configDirectory.'/app.php',
+            [
+                'name' => $setting['site_name'],
+                'url' => $this->getBaseUrl(),
+                'key' => $this->generateKey()
+            ]
+        );
     }
 
     protected function moveExampleFile($name, $old, $new)
@@ -657,23 +667,6 @@ class SetupController
                 $this->baseDirectory.'/'.$new.'.'.$name
             );
         }
-    }
-
-    protected function envReplacementPatterns()
-    {
-        $setting = $this->repository->get('settings');
-        $db = $this->repository->get('database');
-
-        return [
-            '/^APP_NAME=TastyIgniter/m' => 'APP_NAME='.$setting['site_name'],
-            '/^APP_URL=/m'              => 'APP_URL='.$this->getBaseUrl(),
-            '/^APP_KEY=/m'              => 'APP_KEY='.$this->generateKey(),
-            '/^DB_HOST=127.0.0.1/m'     => 'DB_HOST='.$db['host'],
-            '/^DB_DATABASE=database/m'  => 'DB_DATABASE='.$db['database'],
-            '/^DB_USERNAME=username/m'  => 'DB_USERNAME='.$db['username'],
-            '/^DB_PASSWORD=password/m'  => 'DB_PASSWORD='.$db['password'],
-            '/^DB_PREFIX=ti_/m'         => 'DB_PREFIX='.$db['prefix'],
-        ];
     }
 
     public static function generateKey()
@@ -689,11 +682,11 @@ class SetupController
     {
         $defaults = [
             'database' => '',
-            'host'     => '127.0.0.1',
-            'port'     => 3306,
+            'host' => '127.0.0.1',
+            'port' => 3306,
             'username' => '',
             'password' => '',
-            'prefix'   => 'ti_',
+            'prefix' => 'ti_',
         ];
 
         $settings = [];
@@ -717,12 +710,12 @@ class SetupController
     {
         $defaults = [
             'site_location_mode' => 'single',
-            'site_name'          => 'TastyIgniter',
-            'site_email'         => 'admin@restaurant.com',
-            'staff_name'         => 'Chef Sam',
-            'username'           => 'admin',
-            'demo_data'          => 1,
-            'site_key'           => '',
+            'site_name' => 'TastyIgniter',
+            'site_email' => 'admin@restaurant.com',
+            'staff_name' => 'Chef Sam',
+            'username' => 'admin',
+            'demo_data' => 1,
+            'site_key' => '',
         ];
 
         $settings = [];
@@ -903,7 +896,7 @@ class SetupController
             $this->writeLog(file_get_contents($filePath));
             $this->writeLog("Download failed, File hash mismatch: {$expectedHash} (expected) vs {$fileSha} (actual)");
             @unlink($filePath);
-            throw new SetupException('Downloaded files from server are corrupt');
+            throw new SetupException('Downloaded files from server are corrupt, check setup.log');
         }
 
         $this->writeLog('Downloaded file (%s) to %s', $code, $filePath);
@@ -920,10 +913,10 @@ class SetupController
         curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params, '', '&'));
-        
+
         // Used to skip SSL Check on Wamp Server which causes the Live Status Check to fail
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
 
         if (isset($params['site_key']) AND $siteKey = $params['site_key']) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);

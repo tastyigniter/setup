@@ -27,6 +27,10 @@ var Installer = {
                     msg: "Extracting {{name}} {{type}}...",
                     error: "Extracting {{name}} {{type}} failed. See setup log."
                 },
+                config: {
+                    msg: "Writing site configuration files...",
+                    error: "Writing site configuration files failed. See setup log."
+                },
                 install: {
                     msg: "Finishing site setup...",
                     error: "Finishing site setup failed. See setup log."
