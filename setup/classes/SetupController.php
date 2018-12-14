@@ -464,11 +464,13 @@ class SetupController
     {
         $this->bootFramework();
 
+        $this->setSeederProperties($this->repository->get('settings'));
+
         // Install the database tables
         \System\Classes\UpdateManager::instance()->update();
 
         // Create the default location if not already created
-        $this->createDefaultLocation();
+//        $this->createDefaultLocation();
 
         // Create the admin user if no admin exists.
         $this->createSuperUser();
@@ -479,20 +481,6 @@ class SetupController
 
         // Save the site configuration to the settings table
         $this->addSystemSettings();
-    }
-
-    protected function createDefaultLocation()
-    {
-        // Abort: a location already exists
-        if (\Admin\Models\Locations_model::count())
-            return TRUE;
-
-        $config = $this->repository->get('settings');
-
-        \Admin\Models\Locations_model::insert([
-            'location_name' => $config['site_name'],
-            'location_email' => $config['site_email'],
-        ]);
     }
 
     protected function createSuperUser()
@@ -583,6 +571,14 @@ class SetupController
 
         // Delete the setup repository file since its no longer needed
         $this->repository->destroy();
+    }
+
+    protected function setSeederProperties($properties)
+    {
+        \System\Database\Seeds\DatabaseSeeder::$siteName = $properties['site_name'];
+        \System\Database\Seeds\DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
+        \System\Database\Seeds\DatabaseSeeder::$staffName = $properties['staff_name'];
+
     }
 
     //
