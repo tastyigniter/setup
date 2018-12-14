@@ -1,7 +1,7 @@
 <?php
 
 // Constants
-define('TI_PHP_VERSION', '7.0');
+define('TI_PHP_VERSION', '7.1');
 define('SETUPPATH', __DIR__);
 define('BASEPATH', dirname(SETUPPATH));
 define('VIEWPATH', SETUPPATH.'/views');
@@ -9,7 +9,7 @@ define('VIEWPATH', SETUPPATH.'/views');
 /*
  * Check PHP version
  */
-if (version_compare(PHP_VERSION, TI_PHP_VERSION, '<')) exit('You need at least PHP '.TI_PHP_VERSION.' to install TastyIgniter.');
+if (version_compare(PHP_VERSION, TI_PHP_VERSION, '<')) exit('You need at least PHP '.TI_PHP_VERSION.' to install TastyIgniter using this setup wizard.');
 
 // PHP headers
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
