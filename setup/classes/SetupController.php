@@ -469,9 +469,6 @@ class SetupController
         // Install the database tables
         \System\Classes\UpdateManager::instance()->update();
 
-        // Create the default location if not already created
-//        $this->createDefaultLocation();
-
         // Create the admin user if no admin exists.
         $this->createSuperUser();
 
@@ -637,8 +634,8 @@ class SetupController
             array_dot([
                 'default' => 'mysql',
                 'connections' => [
-                    'mysql' => $this->repository->get('database')
-                ]
+                    'mysql' => $this->repository->get('database'),
+                ],
             ])
         );
 
@@ -648,7 +645,7 @@ class SetupController
             [
                 'name' => $setting['site_name'],
                 'url' => $this->getBaseUrl(),
-                'key' => $this->generateKey()
+                'key' => $this->generateKey(),
             ]
         );
     }
