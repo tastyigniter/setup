@@ -155,8 +155,7 @@ var Installer = {
         var $progressBar = Installer.$progressBox.find(".progress-bar"),
             $message = Installer.$progressBox.find(".message")
 
-        if (message)
-            $message.text(message)
+        $message.text(message ? message : '')
 
         switch (direction) {
             case "right":
