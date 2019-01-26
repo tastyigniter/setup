@@ -22,7 +22,7 @@
                     <div class="row">
                         <div id="logo" class="col-xs-12 col-sm-4 navbar-right">
                             <div class="col-xs-8 col-sm-12">
-                                <img src="setup/assets/images/tastyigniter-logo.png" alt="TastyIgniter Logo">
+                                <i class="icon-ti-text-logo fa-4x"></i>
                             </div>
                         </div>
                         <div class="col-xs-12 col-sm-8">
@@ -74,9 +74,6 @@
         <li><a target="_blank" href="//tastyigniter.com"><?= lang('text_tastyigniter_home'); ?></a></li>
         <li><a target="_blank" href="//docs.tastyigniter.com"><?= lang('text_documentation'); ?></a></li>
         <li><a target="_blank" href="//forum.tastyigniter.com"><?= lang('text_community_forums'); ?></a></li>
-        <li>
-            <a target="_blank" href="//forum.tastyigniter.com/forum-21.html"><?= lang('text_feature_request'); ?></a>
-        </li>
     </ul>
 </footer>
 

@@ -38,7 +38,8 @@ hr {
 	border-color: #C7D2E0;
 }
 .page-header #logo > div {
-	padding: 0 0 15px;
+	padding: 10px 0 0px;
+	text-align: right;
 }
 /** WRAPPER **/
 #wrapper, #footer {
