@@ -623,21 +623,23 @@ class SetupController
 
     protected function rewriteConfigFiles()
     {
-        $this->bootFramework();
-
         if (!file_exists($this->configDirectory.'/database.php')
             OR !file_exists($this->configDirectory.'/app.php'))
             return;
 
         $this->configRewrite->toFile(
             $this->configDirectory.'/database.php',
-            array_dot([
+            $this->arrayDot([
                 'default' => 'mysql',
                 'connections' => [
                     'mysql' => $this->repository->get('database'),
                 ],
             ])
         );
+
+        // Boot the framework after database config has been written
+        // to eliminate database connection error.
+        $this->bootFramework();
 
         $setting = $this->repository->get('settings');
         $this->configRewrite->toFile(
@@ -915,6 +917,22 @@ class SetupController
         }
 
         return $curl;
+    }
+
+    protected function arrayDot($array, $prepend = '')
+    {
+        $results = [];
+
+        foreach ($array as $key => $value) {
+            if (is_array($value) && !empty($value)) {
+                $results = array_merge($results, $this->arrayDot($value, $prepend.$key.'.'));
+            }
+            else {
+                $results[$prepend.$key] = $value;
+            }
+        }
+
+        return $results;
     }
 
     //
