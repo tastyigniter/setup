@@ -97,7 +97,7 @@ function lang($key)
         'help_username' => 'Enter the database username.',
         'help_password' => 'Enter the database password. Make sure to use a strong password.',
         'help_dbprefix' => 'The database table prefix. Do not change unless you have to.',
-        'help_site_location_mode' => 'You can change this setting later under System General Settings',
+        'help_site_location_mode' => 'You can change this setting later under the System General Settings',
         'help_extensions' => 'Enjoy TastyIgniter extended core features with these extensions',
         'help_site_key' => 'After setting up a site on the TastyIgniter website, enter it here to install the attached extensions and themes',
 
