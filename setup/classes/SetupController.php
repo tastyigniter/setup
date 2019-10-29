@@ -367,6 +367,8 @@ class SetupController
      */
     protected function hasDbInstalledSettings($db)
     {
+        $this->repository->set('settingsInstalled', FALSE);
+
         // Nothing to import if database has no existing tables
         if ($db->isFreshlyInstalled())
             return FALSE;
@@ -487,7 +489,7 @@ class SetupController
             return TRUE;
 
         if ($this->repository->get('settingsInstalled') === TRUE)
-            return \Admin\Models\Users_model::first()->update(['super_user' => 1]);
+            return optional(\Admin\Models\Users_model::first())->update(['super_user' => 1]);
 
         $config = $this->repository->get('settings');
 
@@ -519,7 +521,11 @@ class SetupController
 
     protected function addSystemSettings()
     {
+        setting()->flushCache();
+
         $settings = $this->repository->get('settings');
+        $settings['sender_name'] = array_get($settings, 'site_name');
+        $settings['sender_email'] = array_get($settings, 'site_email');
 
         setting()->set($settings);
 
@@ -530,6 +536,8 @@ class SetupController
     {
         $core = $this->repository->get('core');
         $config = $this->repository->get('settings');
+
+        params()->flushCache();
 
         params()->set([
             'ti_setup' => 'installed',
