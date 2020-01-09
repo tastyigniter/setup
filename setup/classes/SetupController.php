@@ -168,7 +168,7 @@ class SetupController
             throw new SetupException('Password does not match');
 
         $this->repository->set('settings', [
-            'site_location_mode' => $this->post('site_location_mode'),
+            'site_location_mode' => (string)$this->post('site_location_mode'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
             'staff_name' => $adminName,
@@ -394,9 +394,6 @@ class SetupController
     {
         $params = $this->processInstallItems();
 
-        if ($siteKey = $this->post('site_key'))
-            $params['site_key'] = $siteKey;
-
         $response = $this->requestRemoteData('core/install', $params);
 
         return $this->buildProcessSteps($response);
@@ -543,7 +540,7 @@ class SetupController
             'ti_setup' => 'installed',
             'ti_version' => array_get($core, 'version'),
             'sys_hash' => array_get($core, 'hash'),
-            'site_key' => $config['site_key'] ?? null,
+            'site_key' => $this->post('site_key'),
             'default_location_id' => \Admin\Models\Locations_model::first()->location_id,
         ]);
 
@@ -599,7 +596,7 @@ class SetupController
     protected function downloadFile($fileCode, $fileHash, $params)
     {
         return $this->requestRemoteFile('core/download', [
-            'item' => json_encode($params),
+            'item' => $params,
         ], $fileCode, $fileHash);
     }
 
@@ -711,13 +708,12 @@ class SetupController
     public function getSettingsDetails()
     {
         $defaults = [
-            'site_location_mode' => 'single',
+            'site_location_mode' => 'multiple',
             'site_name' => 'TastyIgniter',
             'site_email' => 'admin@restaurant.com',
             'staff_name' => 'Chef Sam',
             'username' => 'admin',
             'demo_data' => 1,
-            'site_key' => '',
         ];
 
         $settings = [];
@@ -920,7 +916,7 @@ class SetupController
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
 
-        if (isset($params['site_key']) AND $siteKey = $params['site_key']) {
+        if (strlen($siteKey = $this->post('site_key'))) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
         }
 

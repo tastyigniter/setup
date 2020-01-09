@@ -40,7 +40,7 @@ function lang($key)
         'text_goto_storefront' => 'View Your Online Restaurant',
         'text_next_step' => 'Next Step:',
         'text_restaurant_details' => 'Restaurant settings',
-        'text_admin_details' => 'Administration settings',
+        'text_admin_details' => 'Administrator details',
         'text_installation_success' => 'TastyIgniter has been installed successfully.',
         'text_join_community' => '<h3>Join the community</h3><span>Receive future updates, recent news and free support.</span>',
 
@@ -88,7 +88,7 @@ function lang($key)
         'label_confirm_password' => 'Confirm password',
         'label_demo_data' => 'Include demo data',
 
-        'label_site_key' => 'Attach Your Carté',
+        'label_site_key' => 'Attach Your Site (Carté) Key',
         'label_extensions' => 'Popular Extensions',
         'label_meta_data' => 'Meta Data',
 
@@ -99,7 +99,7 @@ function lang($key)
         'help_dbprefix' => 'The database table prefix. Do not change unless you have to.',
         'help_site_location_mode' => 'You can change this setting later under the System General Settings',
         'help_extensions' => 'Enjoy TastyIgniter extended core features with these extensions',
-        'help_site_key' => 'After setting up a site on the TastyIgniter website, enter it here to install the attached extensions and themes',
+        'help_site_key' => 'A Site key is required to add/update item from the TastyIgniter Marketplace. Get one by creating a site from your <a href="%s" target="_blank">TastyIgniter Account</a>, if you haven\'t already.',
 
         'button_continue' => 'Continue',
         'button_proceed' => 'Complete setup',
