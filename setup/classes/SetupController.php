@@ -957,7 +957,7 @@ class SetupController
 
         $message = array_shift($args);
         if (is_array($message))
-            $message = implode(PHP_EOL, $message);
+            $message = @implode(PHP_EOL, $message);
 
         $date = "";
         if (!array_key_exists('hideTime', $args))
