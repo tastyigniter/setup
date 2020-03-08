@@ -906,6 +906,9 @@ class SetupController
     {
         $params['url'] = base64_encode($this->getBaseUrl());
 
+        if (isset($_GET['edge']) AND $_GET['edge'] == 1)
+            $params['edge'] = 1;
+
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, static::TI_ENDPOINT.'/'.$uri);
         curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
