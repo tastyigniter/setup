@@ -496,12 +496,15 @@ class SetupController
         ]);
 
         $staff->staff_name = $config['staff_name'];
-        $staff->staff_group_id = \Admin\Models\Staff_groups_model::first()->staff_group_id;
+        $staff->staff_role_id = \Admin\Models\Staff_roles_model::first()->staff_role_id;
         $staff->staff_location_id = \Admin\Models\Locations_model::first()->location_id;
         $staff->language_id = \System\Models\Languages_model::first()->language_id;
         $staff->timezone = FALSE;
         $staff->staff_status = TRUE;
         $staff->save();
+
+        $staff->groups()->attach(\Admin\Models\Staff_groups_model::first()->staff_group_id);
+        $staff->locations()->attach(\Admin\Models\Locations_model::first()->location_id);
 
         $user = \Admin\Models\Users_model::firstOrNew([
             'username' => $config['username'],
