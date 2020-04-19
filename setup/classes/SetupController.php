@@ -583,6 +583,7 @@ class SetupController
         \System\Database\Seeds\DatabaseSeeder::$siteName = $properties['site_name'];
         \System\Database\Seeds\DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
         \System\Database\Seeds\DatabaseSeeder::$staffName = $properties['staff_name'];
+        \System\Database\Seeds\DatabaseSeeder::$seedDemo = (bool)$properties['demo_data'];
     }
 
     //
