@@ -56,7 +56,7 @@ class SetupController
                 $result = extension_loaded('mysqli') AND class_exists('Mysqli');
                 break;
             case 'pdo':
-                $result = defined('PDO::ATTR_DRIVER_NAME') OR class_exists('PDO');
+                $result = extension_loaded('pdo') AND extension_loaded('pdo_mysql');
                 break;
             case 'mbstring':
                 $result = extension_loaded('mbstring');
