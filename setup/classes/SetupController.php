@@ -32,7 +32,7 @@ class SetupController
         if (!$this->page)
             $this->page = new stdClass;
 
-        $this->page->currentStep = 'requirement';
+        $this->page->currentStep = 'requirements';
         if (isset($_GET['skipConfig']) AND $_GET['skipConfig'] == 1)
             $this->page->currentStep = 'install';
 
@@ -43,7 +43,7 @@ class SetupController
     // Post Handlers
     //
 
-    public function onCheckRequirement()
+    public function onCheckRequirements()
     {
         $code = $this->post('code');
         $this->writeLog('System check: %s', $code);
@@ -168,7 +168,7 @@ class SetupController
             throw new SetupException('Password does not match');
 
         $this->repository->set('settings', [
-            'site_location_mode' => (string)$this->post('site_location_mode'),
+            'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
             'site_name' => $siteName,
             'site_email' => $siteEmail,
             'staff_name' => $adminName,
@@ -424,7 +424,6 @@ class SetupController
         $processSteps = [];
 
         foreach (['download', 'extract', 'config', 'install'] as $step) {
-
             $applySteps = [];
 
             if (in_array($step, ['config', 'install'])) {
@@ -583,6 +582,7 @@ class SetupController
         \System\Database\Seeds\DatabaseSeeder::$siteName = $properties['site_name'];
         \System\Database\Seeds\DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
         \System\Database\Seeds\DatabaseSeeder::$staffName = $properties['staff_name'];
+        \System\Database\Seeds\DatabaseSeeder::$seedDemo = (bool)$properties['demo_data'];
     }
 
     //
@@ -711,7 +711,7 @@ class SetupController
     public function getSettingsDetails()
     {
         $defaults = [
-            'site_location_mode' => 'multiple',
+            'site_location_mode' => 0,
             'site_name' => 'TastyIgniter',
             'site_email' => 'admin@restaurant.com',
             'staff_name' => 'Chef Sam',
@@ -868,7 +868,6 @@ class SetupController
     }
 
     protected function requestRemoteFile($uri, $params = [], $code, $expectedHash)
-
     {
         if (!mkdir($this->tempDirectory, 0777, TRUE) AND !is_dir($this->tempDirectory))
             throw new SetupException(sprintf('Failed to create temp directory: %s', $this->tempDirectory));

@@ -6,124 +6,122 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title><?= sprintf(lang('text_title'), lang('text_installation')); ?></title>
     <link type="image/ico" rel="shortcut icon" href="setup/assets/images/favicon.ico">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/vendor/bootstrap.min.css">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/vendor/font-awesome.min.css">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/vendor/animate.css">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/vendor/awesome-checkbox.css">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/fonts.css">
-    <link type="text/css" rel="stylesheet" href="setup/assets/css/stylesheet.css">
+    <link type="text/css" rel="stylesheet" href="setup/assets/css/app.css">
 </head>
-<body>
-<div id="page">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-9 center-block">
-                <div class="page-header">
-                    <div class="row">
-                        <div id="logo" class="col-xs-12 col-sm-4 navbar-right">
-                            <div class="col-xs-8 col-sm-12">
-                                <i class="icon-ti-text-logo fa-4x"></i>
-                            </div>
+<body class="">
+    <div id="page">
+        <div class="container">
+            <div class="page w-75 mx-auto my-5">
+                <div class="page-header mb-4">
+                    <div class="d-md-flex align-items-center justify-content-center text-white-50">
+                        <div class="px-3">
+                            <i class="icon-ti-logo fa-3x"></i>
                         </div>
-                        <div class="col-xs-12 col-sm-8">
-                            <h1 data-html="title"><?= lang('text_requirement_heading'); ?></h1>
-                            <p data-html="subTitle"><?= lang('text_requirement_sub_heading'); ?></p>
+                        <div class="">
+                            <h1><?= lang('text_installation'); ?></h1>
                         </div>
                     </div>
                 </div>
 
-                <?php include_once 'setup/views/wizard.php'; ?>
+                <div class="page-content">
+                    <div class="card border shadow-sm">
+                        <div class="card-header">
+                            <h2 data-html="title"><?= lang('text_requirement_heading'); ?></h2>
+                            <p class="lead" data-html="subTitle"><?= lang('text_requirement_sub_heading'); ?></p>
 
-                <div class="card">
-                    <div class="content">
-
+                            <?php include_once PARTIALPATH.'wizard.php'; ?>
+                        </div>
                         <form id="setup-form" accept-charset="utf-8" method="POST" role="form">
+
                             <div data-html="content"></div>
+
                             <input type="hidden" id="current-step" value="<?= $page->currentStep ?>">
 
-                            <div id="flash-modal"
-                                 class="modal"
-                                 tabindex="-1"
-                                 role="dialog"
-                                 data-html="modal">
+                            <div
+                                id="page-modal"
+                                class="modal"
+                                tabindex="-1"
+                                role="dialog"
+                                data-html="modal">
                             </div>
                         </form>
+
+                        <div id="progress-box" class="card-footer d-none" style="display: none;">
+                            <h4 class="message"></h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page-footer">
+                    <div class="p-3 text-center">
+                        <a
+                            class="px-3 text-white-50"
+                            target="_blank"
+                            href="//tastyigniter.com"
+                        ><?= lang('text_tastyigniter_home'); ?></a>
+                        <a
+                            class="px-3 text-white-50"
+                            target="_blank"
+                            href="//tastyigniter.com/docs"
+                        ><?= lang('text_documentation'); ?></a>
+                        <a
+                            class="px-3 text-white-50"
+                            target="_blank"
+                            href="//forum.tastyigniter.com"
+                        ><?= lang('text_community_forums'); ?></a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div id="progress-box">
-    <div class="progress">
-        <div
-            class="progress-bar"
-            role="progressbar"
-            aria-valuenow="0"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            style="width:0%"></div>
-    </div>
-    <p class="message"></p>
-</div>
-<div id="flash-message"></div>
+    <div id="flash-message"></div>
 
-<footer class="footer-links">
-    <ul class="list-group list-inline">
-        <li><a target="_blank" href="//tastyigniter.com"><?= lang('text_tastyigniter_home'); ?></a></li>
-        <li><a target="_blank" href="//docs.tastyigniter.com"><?= lang('text_documentation'); ?></a></li>
-        <li><a target="_blank" href="//forum.tastyigniter.com"><?= lang('text_community_forums'); ?></a></li>
-    </ul>
-</footer>
+    <?php
+    $partialList = [
+        'alert_check_failed',
+        'alert_check_complete',
+        'requirements',
+        'database',
+        'upgrade',
+        'settings',
+        'install',
+        'theme',
+        'progress_install',
+        'proceed',
+    ];
+    ?>
 
-<?php
-$viewsList = [
-    'license',
-    'check_alert',
-    'requirements',
-    'database',
-    'upgrade',
-    'settings',
-    'install',
-    'themes',
-    'theme',
-    'proceed',
-];
-?>
+    <?php foreach ($partialList as $partial) { ?>
+        <script type="text/template" data-partial="<?= $partial ?>">
+            <?php include PARTIALPATH.$partial.'.php'; ?>
+        </script>
+    <?php } ?>
 
-<?php foreach ($viewsList as $file) { ?>
-    <script type="text/template" data-view="<?= $file ?>">
-        <?php include VIEWPATH.'/'.$file.'.php'; ?>
+    <script src="https://tastyigniter.com/assets/ui/js/global.js"></script>
+    <script src="setup/assets/js/app.js"></script>
+    <script type="text/javascript">
+        Installer.Steps.requirements.view = "[data-partial=\"requirements\"]"
+        Installer.Steps.requirements.title = "<?= lang('text_requirement_heading'); ?>"
+        Installer.Steps.requirements.subTitle = "<?= lang('text_requirement_sub_heading'); ?>"
+
+        Installer.Steps.database.view = "[data-partial=\"database\"]"
+        Installer.Steps.database.title = "<?= lang('text_database_heading'); ?>"
+        Installer.Steps.database.subTitle = "<?= lang('text_database_sub_heading'); ?>"
+
+        Installer.Steps.settings.view = "[data-partial=\"settings\"]"
+        Installer.Steps.settings.title = "<?= lang('text_settings_heading'); ?>"
+        Installer.Steps.settings.subTitle = "<?= lang('text_settings_sub_heading'); ?>"
+
+        Installer.Steps.install.view = "[data-partial=\"install\"]"
+        Installer.Steps.install.title = "<?= lang('text_complete_heading'); ?>"
+        Installer.Steps.install.subTitle = "<?= lang('text_complete_sub_heading'); ?>"
+
+        Installer.Steps.proceed.view = "[data-partial=\"proceed\"]"
+        Installer.Steps.proceed.title = "&#127881;&nbsp;Yippee!"
+        Installer.Steps.proceed.subTitle = "Setup has been successfully completed"
+
+        Installer.init()
     </script>
-<?php } ?>
-
-<script src="setup/assets/js/vendor.js"></script>
-<script src="setup/assets/js/app.js"></script>
-<script src="setup/assets/js/mustache.js"></script>
-<script src="setup/assets/js/installer.js"></script>
-<script type="text/javascript">
-    Installer.Steps.requirement.view = "[data-view=\"requirements\"]"
-    Installer.Steps.requirement.title = "<?= lang('text_requirement_heading'); ?>"
-    Installer.Steps.requirement.subTitle = "<?= lang('text_requirement_sub_heading'); ?>"
-
-    Installer.Steps.database.view = "[data-view=\"database\"]"
-    Installer.Steps.database.title = "<?= lang('text_database_heading'); ?>"
-    Installer.Steps.database.subTitle = "<?= lang('text_database_sub_heading'); ?>"
-
-    Installer.Steps.settings.view = "[data-view=\"settings\"]"
-    Installer.Steps.settings.title = "<?= lang('text_settings_heading'); ?>"
-    Installer.Steps.settings.subTitle = "<?= lang('text_settings_sub_heading'); ?>"
-
-    Installer.Steps.install.view = "[data-view=\"install\"]"
-    Installer.Steps.install.title = "<?= lang('text_complete_heading'); ?>"
-    Installer.Steps.install.subTitle = "<?= lang('text_complete_sub_heading'); ?>"
-
-    Installer.Steps.proceed.view = "[data-view=\"proceed\"]"
-    Installer.Steps.proceed.title = "Yippee!"
-    Installer.Steps.proceed.subTitle = "Setup has been successfully completed"
-
-    Installer.init()
-</script>
 </body>
 </html>

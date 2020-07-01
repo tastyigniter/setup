@@ -1,0 +1,83 @@
+$white: #FFFFFF !default;
+$gray-100: #FCFDFF !default;
+$gray-200: #EAE9EB !default;
+$gray-300: #D1D0D2 !default;
+$gray-400: #BBC1D6 !default;
+$gray-500: #898FA4 !default;
+$gray-600: #6F758A !default;
+$gray-700: #565C71 !default;
+$gray-800: #3C4257 !default;
+$gray-900: #23293E !default;
+$black: #000329 !default;
+//
+// Colors
+//
+$primary: #FF4900 !default;
+$secondary: $gray-300 !default;
+$success: #28A745 !default;
+$info: #5A67D8 !default;
+$warning: #FD7E14 !default;
+$danger: #DC3545 !default;
+$light: $gray-100 !default;
+$dark: $gray-900 !default;
+
+$theme-colors: () !default;
+$theme-colors: map-merge((
+  "primary": $primary,
+  "default": $secondary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark
+), $theme-colors);
+
+// Options
+//
+// Quickly modify global styling by enabling or disabling optional features.
+
+// Fonts
+//
+$font-family-sans-serif: "Barlow", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !default;
+$font-family-monospace: "Droid Sans Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !default;
+
+// Icon
+//
+$icon-font-path: '../fonts/FontAwesome';
+$fa-font-path: $icon-font-path;
+
+// Body
+//
+$body-bg: $gray-200 !default;
+$body-color: $gray-800 !default;
+
+$font-size-base: 0.875rem !default;
+$font-weight-bold: 600 !default;
+
+$headings-font-weight: 500 !default;
+
+$text-muted: $gray-600 !default;
+
+// Spacer
+//
+$spacer: 1rem !default;
+
+// Components
+//
+//$border-width:                          0 !default;
+$border-color: $gray-200 !default;
+
+$btn-font-weight: $font-weight-bold !default;
+
+// Forms
+$input-border-color: $gray-200 !default;
+$input-group-addon-border-color: $gray-200 !default;
+$custom-control-indicator-border-color: $gray-300 !default;
+
+// Cards
+$card-border-width: 0 !default;
+
+// List groups
+$list-group-border-color: $border-color !default;

@@ -4,7 +4,7 @@
 define('TI_PHP_VERSION', '7.2');
 define('SETUPPATH', __DIR__);
 define('BASEPATH', dirname(SETUPPATH));
-define('VIEWPATH', SETUPPATH.'/views');
+define('PARTIALPATH', SETUPPATH.'/partials/');
 
 /*
  * Check PHP version

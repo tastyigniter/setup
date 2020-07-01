@@ -1,0 +1,14 @@
+#flash-message {
+  display: none;
+  position: fixed;
+  top: 30px;
+  left: 0;
+  width: 100%;
+}
+#flash-message.show {
+  display: block;
+}
+#flash-message .alert {
+  width: 30%;
+  margin: 0 30px 0 auto;
+}
