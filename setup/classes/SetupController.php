@@ -80,7 +80,7 @@ class SetupController
                 $result = ($this->requestRemoteData('ping') !== null);
                 break;
             case 'writable':
-                $result = is_writable(BASEPATH) AND is_writable($this->logFile);
+                $result = (mkdir($this->tempDirectory, 0777, TRUE) AND rmdir($this->tempDirectory));
                 break;
         }
 
