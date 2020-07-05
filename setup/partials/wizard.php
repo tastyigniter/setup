@@ -29,4 +29,7 @@
         </div>
         <span class="bs-wizard-dot"></span>
     </div>
+    <div class="px-2 bs-wizard-step" data-wizard="proceed">
+        <span class="bs-wizard-dot"></span>
+    </div>
 </div>

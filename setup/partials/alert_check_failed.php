@@ -8,7 +8,7 @@
         Please see <a href="//docs.tastyigniter.com" target="_blank">the documentation</a> for more information.
     </p>
     <a
-        href="#"
+        href=""
         class="btn btn-primary"
         data-install-control="retry-check"
     >Retry Check</a>

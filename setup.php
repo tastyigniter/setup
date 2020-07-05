@@ -13,18 +13,18 @@
         <div class="container">
             <div class="page w-75 mx-auto my-5">
                 <div class="page-header mb-4">
-                    <div class="d-md-flex align-items-center justify-content-center text-white-50">
+                    <div class="d-md-flex align-items-center justify-content-center text-black-50">
                         <div class="px-3">
                             <i class="icon-ti-logo fa-3x"></i>
                         </div>
                         <div class="">
-                            <h1><?= lang('text_installation'); ?></h1>
+                            <h1 class="font-weight-bold"><?= lang('text_installation'); ?></h1>
                         </div>
                     </div>
                 </div>
 
                 <div class="page-content">
-                    <div class="card border shadow-sm">
+                    <div class="card shadow-sm">
                         <div class="card-header">
                             <h2 data-html="title"><?= lang('text_requirement_heading'); ?></h2>
                             <p class="lead" data-html="subTitle"><?= lang('text_requirement_sub_heading'); ?></p>
@@ -55,17 +55,17 @@
                 <div class="page-footer">
                     <div class="p-3 text-center">
                         <a
-                            class="px-3 text-white-50"
+                            class="px-3 text-black-50"
                             target="_blank"
                             href="//tastyigniter.com"
                         ><?= lang('text_tastyigniter_home'); ?></a>
                         <a
-                            class="px-3 text-white-50"
+                            class="px-3 text-black-50"
                             target="_blank"
                             href="//tastyigniter.com/docs"
                         ><?= lang('text_documentation'); ?></a>
                         <a
-                            class="px-3 text-white-50"
+                            class="px-3 text-black-50"
                             target="_blank"
                             href="//forum.tastyigniter.com"
                         ><?= lang('text_community_forums'); ?></a>
@@ -87,7 +87,8 @@
         'settings',
         'install',
         'theme',
-        'progress_install',
+        'install_progress',
+        'install_failed',
         'proceed',
     ];
     ?>

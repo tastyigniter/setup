@@ -110,7 +110,8 @@ function lang($key)
         'button_install' => 'Setup your Site',
         'button_accept' => 'Accept License',
         'button_clean_install' => 'Fresh Install',
-        'button_choose_theme' => 'Choose a theme',
+        'button_clean_install' => 'Fresh: No theme or extensions',
+        'button_choose_theme' => 'Choose a pre-built theme',
 
         'alert_license_error' => 'Please accept the TastyIgniter license before proceeding.',
         'alert_requirement_error' => 'Error checking server requirements, please make sure all lights are green.',

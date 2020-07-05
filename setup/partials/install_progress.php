@@ -6,6 +6,6 @@
             role="status"
         ></i>
     </div>
-    <h3 class="my-4">&#127858;&nbsp;&nbsp;Installing application...</h3>
+    <h3 class="my-4">Setting up your application...&nbsp;&nbsp;&#127858;</h3>
     <p class="message"></p>
 </div>

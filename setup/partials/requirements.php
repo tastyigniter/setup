@@ -46,7 +46,7 @@ $definitions = [
     <div class="list-group list-group-flush list-requirement">
         <?php foreach ($definitions as $code => $requirement) { ?>
             <div
-                class="list-group-item animated pulse d-none"
+                class="list-group-item py-3 animated pulse d-none"
                 data-requirement="<?= $code; ?>"
                 data-label="<?= lang($requirement['label']); ?>"
                 data-hint="<?= lang($requirement['hint']); ?>"

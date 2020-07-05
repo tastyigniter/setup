@@ -15,8 +15,8 @@
     <div data-html="install-type">
         <div class="row text-center py-4">
             <div class="col-md-6">
-                <div class="card card-body shadow border">
-                    <p>Choose a theme that fits which you may customize later.</p>
+                <div class="card card-body shadow">
+                    <p>With a pre-built theme and some recommended extensions.</p>
                     <button
                         type="button"
                         class="btn btn-primary"
@@ -25,10 +25,10 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card card-body shadow border">
-                    <p>Install TastyIgniter without any extensions or themes.</p>
+                <div class="card card-body shadow">
+                    <p>Without any extensions or theme, you can install them later.</p>
                     <button
-                        class="btn btn-outline-secondary"
+                        class="btn btn-light border"
                         data-install-control="install-core"
                     ><?= lang('button_clean_install') ?></button>
                 </div>

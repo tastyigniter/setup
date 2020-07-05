@@ -4,7 +4,7 @@
     </div>
     
     <div class="buttons py-5">
-        <a href="{{frontUrl}}" class="btn btn-outline-secondary"><?= lang('text_goto_storefront'); ?></a>
+        <a href="{{frontUrl}}" class="btn btn-light border"><?= lang('text_goto_storefront'); ?></a>
         &nbsp;&nbsp;&nbsp;
         <a href="{{proceedUrl}}" class="btn btn-primary"><?= lang('text_next_step'); ?> <?= lang('text_login_to_admin'); ?></a>
     </div>

@@ -34,7 +34,7 @@ class SetupController
 
         $this->page->currentStep = 'requirements';
         if (isset($_GET['skipConfig']) AND $_GET['skipConfig'] == 1)
-            $this->page->currentStep = 'install';
+            $this->page->currentStep = 'settings';
 
         return $this->page;
     }
@@ -80,7 +80,10 @@ class SetupController
                 $result = ($this->requestRemoteData('ping') !== null);
                 break;
             case 'writable':
-                $result = (mkdir($this->tempDirectory, 0777, TRUE) AND rmdir($this->tempDirectory));
+                @rmdir($this->tempDirectory);
+                $result = @mkdir($this->tempDirectory, 0777, TRUE);
+                @rmdir($this->tempDirectory);
+
                 break;
         }
 
@@ -169,6 +172,7 @@ class SetupController
 
         $this->repository->set('settings', [
             'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
+            'demo_data' => $this->post('demo_data'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
             'staff_name' => $adminName,
@@ -697,7 +701,7 @@ class SetupController
             if ($this->post($item)) {
                 $settings[$item] = $this->post($item);
             }
-            else if (isset($db[$item])) {
+            elseif (isset($db[$item])) {
                 $settings[$item] = $db[$item];
             }
             else {
@@ -724,7 +728,7 @@ class SetupController
             if ($this->post($item)) {
                 $settings[$item] = $this->post($item);
             }
-            else if ($this->repository->has($item)) {
+            elseif ($this->repository->has($item)) {
                 $settings[$item] = $this->repository->get($item);
             }
             else {
