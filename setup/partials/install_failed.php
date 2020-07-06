@@ -10,7 +10,8 @@
     </h3>
     <p>
         Please check your <code>setup/setup.log</code> for information and follow the
-        <a href="https://tastyigniter.com/docs/master/installation#troubleshooting">installation troubleshooting</a>
+        <a target="_blank" href="https://tastyigniter.com/docs/master/installation#troubleshooting">installation
+            troubleshooting</a>
         guide.
     </p>
     <p class="message"></p>
