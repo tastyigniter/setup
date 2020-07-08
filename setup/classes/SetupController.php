@@ -538,7 +538,6 @@ class SetupController
     protected function addSystemParameters()
     {
         $core = $this->repository->get('core');
-        $config = $this->repository->get('settings');
 
         params()->flushCache();
 
@@ -564,7 +563,7 @@ class SetupController
             if ($item['type'] != 'extension')
                 continue;
 
-            \System\Models\Extensions_model::install($item['code']);
+            \System\Classes\ExtensionManager::installExtension($item['code']);
         }
 
         \System\Models\Themes_model::syncAll();
@@ -762,8 +761,7 @@ class SetupController
             throw new SetupException('App loader file was not found.');
 
         $app = require_once $appFile;
-        $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-        $kernel->bootstrap();
+        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
     }
 
     protected function e($value)
@@ -871,7 +869,7 @@ class SetupController
         return $_result;
     }
 
-    protected function requestRemoteFile($uri, $params = [], $code, $expectedHash)
+    protected function requestRemoteFile($uri, array $params, $code, $expectedHash)
     {
         if (!mkdir($this->tempDirectory, 0777, TRUE) AND !is_dir($this->tempDirectory))
             throw new SetupException(sprintf('Failed to create temp directory: %s', $this->tempDirectory));
