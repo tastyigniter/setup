@@ -563,7 +563,7 @@ class SetupController
             if ($item['type'] != 'extension')
                 continue;
 
-            \System\Classes\ExtensionManager::installExtension($item['code']);
+            \System\Classes\ExtensionManager::instance()->installExtension($item['code']);
         }
 
         \System\Models\Themes_model::syncAll();
