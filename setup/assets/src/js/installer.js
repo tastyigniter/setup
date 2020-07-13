@@ -169,9 +169,11 @@ var Installer = {
         $(Installer.options.currentStepSelector).val(step)
 
         for (var index in steps) {
-            Installer.$page.find('[data-wizard="' + steps[index] + '"]').addClass('complete')
+            var $step = Installer.$page.find('[data-wizard="' + steps[index] + '"]')
+            $step.removeClass('in-progress').addClass('complete')
 
             if (steps[index] === step) {
+                $step.addClass('in-progress')
                 break
             }
         }

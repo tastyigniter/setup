@@ -10,14 +10,14 @@
       display: block;
       background: $gray-300;
       top: 20px;
-      left: 0;
+      left: 44%;
       margin-top: -14px;
       border-radius: 50%;
 
       &:after {
         content: ' ';
-        width: 10px;
-        height: 10px;
+        width: 8px;
+        height: 8px;
         background: $gray-300;
         border-radius: 50px;
         position: absolute;
@@ -47,7 +47,8 @@
 
     &:last-child > .bs-wizard-dot:last-child {
       right: 0;
-      border-radius: 0%
+      border-radius: 0;
+      left: 0;
     }
 
     &:last-child > .bs-wizard-dot:last-child:after {
@@ -74,6 +75,16 @@
 
         &:after {
           background: $primary;
+        }
+      }
+
+      &.in-progress {
+        > .bs-wizard-dot {
+          background: $primary;
+
+          &:after {
+            background: $white;
+          }
         }
       }
 
