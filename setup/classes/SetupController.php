@@ -50,7 +50,7 @@ class SetupController
         $result = FALSE;
         switch ($code) {
             case 'php':
-                $result = version_compare(PHP_VERSION, TI_PHP_VERSION, ">=");
+                $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
                 break;
             case 'mysqli':
                 $result = extension_loaded('mysqli') AND class_exists('Mysqli');
@@ -98,10 +98,8 @@ class SetupController
     {
         if ($this->post('license_agreed') != 1)
             throw new SetupException('Please accept the TastyIgniter license before proceeding.');
-
         if (($requirement = $this->post('requirement')) != 'complete')
             throw new SetupException('Error checking server requirements, please make sure all lights are green.');
-
         $this->repository->set('requirement', $requirement)->save();
 
         $this->writeLog('License & requirement check: %s', $requirement);
@@ -118,10 +116,8 @@ class SetupController
 
         if (!strlen($this->post('host')))
             throw new SetupException('Please specify a database host');
-
         if (!strlen($database = $this->post('database')))
             throw new SetupException('Please specify the database name');
-
         $config = $this->verifyDbConfiguration($this->post());
 
         $db = $this->testDbConnection($config);
@@ -149,27 +145,20 @@ class SetupController
 
         if (!strlen($siteName))
             throw new SetupException('Please specify your restaurant name');
-
         if (!strlen($siteEmail = $this->post('site_email')))
             throw new SetupException('Please specify your restaurant email');
-
         if (!strlen($adminName = $this->post('staff_name')))
             throw new SetupException('Please specify the administrator name');
-
         if (!strlen($username = $this->post('username')))
             throw new SetupException('Please specify the administrator username');
-
         if (!strlen($password = $this->post('password'))
             OR strlen($password = $this->post('password')) < 6
         )
             throw new SetupException('Please specify the administrator password, at least 6 characters');
-
         if (!strlen($this->post('confirm_password')))
             throw new SetupException('Please confirm the administrator password');
-
         if ($this->post('confirm_password') != $password)
             throw new SetupException('Password does not match');
-
         $this->repository->set('settings', [
             'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
             'demo_data' => $this->post('demo_data'),
@@ -321,7 +310,7 @@ class SetupController
 
         // Try connecting to database using the specified driver
         $dsn = 'mysql:host='.$host.';dbname='.$database;
-        if ($port) $dsn .= ";port=".$port;
+        if ($port) $dsn .= ';port='.$port;
 
         try {
             $options = [SetupPDO::ATTR_ERRMODE => SetupPDO::ERRMODE_EXCEPTION];
@@ -749,17 +738,14 @@ class SetupController
     {
         if (!is_file($this->baseDirectory.'/vendor/tastyigniter/flame/src/Support/helpers.php'))
             throw new SetupException('Missing vendor files.');
-
         $autoloadFile = $this->baseDirectory.'/bootstrap/autoload.php';
         if (!file_exists($autoloadFile))
             throw new SetupException('Autoloader file was not found.');
-
         include $autoloadFile;
 
         $appFile = $this->baseDirectory.'/bootstrap/app.php';
         if (!file_exists($appFile))
             throw new SetupException('App loader file was not found.');
-
         $app = require_once $appFile;
         $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
     }
@@ -826,6 +812,7 @@ class SetupController
     {
         $result = null;
         $error = null;
+
         try {
             $this->writeLog('Server request: %s', $uri);
 
@@ -856,6 +843,7 @@ class SetupController
 
         if (!is_array($_result)) {
             $this->writeLog('Server response: '.$result);
+
             throw new SetupException('Server returned an invalid response.');
         }
 
@@ -884,12 +872,12 @@ class SetupController
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
             if ($httpCode == 500)
                 throw new SetupException(file_get_contents($filePath));
-
             curl_close($curl);
             fclose($fileStream);
         }
         catch (Exception $ex) {
             $this->writeLog('Server responded with error: '.$ex->getMessage());
+
             throw new SetupException('Server responded with error: '.$ex->getMessage());
         }
 
@@ -898,6 +886,7 @@ class SetupController
             $this->writeLog(file_get_contents($filePath));
             $this->writeLog("Download failed, File hash mismatch: {$expectedHash} (expected) vs {$fileSha} (actual)");
             @unlink($filePath);
+
             throw new SetupException('Downloaded files from server are corrupt, check setup.log');
         }
 
@@ -966,7 +955,7 @@ class SetupController
         if (is_array($message))
             $message = implode(PHP_EOL, $message);
 
-        $date = "";
+        $date = '';
         if (!array_key_exists('hideTime', $args))
             $date = '['.date('Y/m/d h:i:s').'] => ';
 

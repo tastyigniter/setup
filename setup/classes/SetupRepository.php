@@ -89,6 +89,7 @@ class SetupRepository
 
     /**
      * Get the content of the config file.
+     *
      * @return string
      */
     public function contents()
@@ -98,6 +99,7 @@ class SetupRepository
 
     /**
      * Get the the config file path.
+     *
      * @return string
      */
     public function getPath()

@@ -122,4 +122,3 @@ function lang($key)
 
     return isset($lang[$key]) ? $lang[$key] : null;
 }
-
