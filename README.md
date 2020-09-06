@@ -14,8 +14,8 @@ Using this wizard is the recommended way to install and setup TastyIgniter.
 
 These are the requirements for your  web hosting to run TastyIgniter:
 
-- PHP (at least 7.2)
-- MySQL version 5.5 or higher
+- PHP 7.2+
+- MySQL 5.6+
 - PDO PHP Extension
 - cURL PHP Extension
 - OpenSSL PHP Extension

@@ -2,6 +2,7 @@
 
 // Constants
 define('TI_PHP_VERSION', '7.2');
+define('TI_MYSQL_VERSION', '5.6.10');
 define('SETUPPATH', __DIR__);
 define('BASEPATH', dirname(SETUPPATH));
 define('PARTIALPATH', SETUPPATH.'/partials/');

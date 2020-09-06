@@ -21,7 +21,8 @@ function lang($key)
         'text_success_sub_heading' => 'Start receiving orders!',
 
         'text_php_version' => 'PHP version '.TI_PHP_VERSION.' or greater required',
-        'text_mysqli_installed' => '- is MySQLi installed?',
+        'text_mysql_version' => 'MySQL version '.TI_MYSQL_VERSION.' or greater required',
+        'text_mysqli_installed' => '- is MySQLi PHP Extension installed?',
         'text_curl_installed' => '- cURL PHP Extension is required',
         'text_live_connection' => '- Test connection to the installation server is required',
         'text_pdo_installed' => '- PDO PHP Extension is required',
@@ -61,7 +62,7 @@ function lang($key)
         'label_register_globals' => 'Register Globals',
         'label_magic_quotes' => 'Magic Quotes GPC',
         'label_file_uploads' => 'File Uploads',
-        'label_mysqli' => 'MySQL',
+        'label_mysqli' => 'MySQLi PHP Extension',
         'label_pdo' => 'PDO PHP Extension',
         'label_curl' => 'cURL PHP Extension',
         'label_connection' => 'Live Connection',
@@ -109,7 +110,6 @@ function lang($key)
         'button_admin' => 'Application Setup',
         'button_install' => 'Setup your Site',
         'button_accept' => 'Accept License',
-        'button_clean_install' => 'Fresh Install',
         'button_clean_install' => 'Fresh: No theme or extensions',
         'button_choose_theme' => 'Choose a pre-built theme',
 

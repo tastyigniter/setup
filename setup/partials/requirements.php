@@ -4,10 +4,6 @@ $definitions = [
         'label' => 'label_php_version',
         'hint' => 'text_php_version',
     ],
-    'mysqli' => [
-        'label' => 'label_mysqli',
-        'hint' => 'text_mysqli_installed',
-    ],
     'pdo' => [
         'label' => 'label_pdo',
         'hint' => 'text_pdo_installed',

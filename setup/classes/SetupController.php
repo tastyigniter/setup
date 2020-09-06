@@ -52,11 +52,8 @@ class SetupController
             case 'php':
                 $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
                 break;
-            case 'mysqli':
-                $result = extension_loaded('mysqli') AND class_exists('Mysqli');
-                break;
             case 'pdo':
-                $result = extension_loaded('pdo') AND extension_loaded('pdo_mysql');
+                $result = (extension_loaded('pdo') AND extension_loaded('pdo_mysql'));
                 break;
             case 'mbstring':
                 $result = extension_loaded('mbstring');
@@ -116,8 +113,10 @@ class SetupController
 
         if (!strlen($this->post('host')))
             throw new SetupException('Please specify a database host');
+
         if (!strlen($database = $this->post('database')))
             throw new SetupException('Please specify the database name');
+
         $config = $this->verifyDbConfiguration($this->post());
 
         $db = $this->testDbConnection($config);
@@ -315,6 +314,9 @@ class SetupController
         try {
             $options = [SetupPDO::ATTR_ERRMODE => SetupPDO::ERRMODE_EXCEPTION];
             $db = new \SetupPDO($dsn, $username, $password, $options, $config);
+
+            if (!$db->compareInstalledVersion())
+                throw new SetupException('Connection failed: '.lang('text_mysql_version'));
         }
         catch (PDOException $ex) {
             throw new SetupException('Connection failed: '.$ex->getMessage());
@@ -374,7 +376,7 @@ class SetupController
         }
 
         throw new SetupException(sprintf(
-            'Database "%s" is not empty. Please empty the database or specify a different database table prefix.',
+            'Database "%s" is not empty. Please use an empty database or specify a different database table prefix.',
             $this->e($db->config('database'))
         ));
     }
