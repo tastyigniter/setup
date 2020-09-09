@@ -56,7 +56,8 @@ class SetupPDO extends PDO
     public function compareInstalledVersion()
     {
         $installedVersion = $this->getAttribute(self::ATTR_SERVER_VERSION);
-        $installedVersion = substr($installedVersion, 0, 6);
+        $installedVersion = explode('-', $installedVersion);
+        $installedVersion = array_shift($installedVersion);
 
         return version_compare($installedVersion, TI_MYSQL_VERSION, '>=');
     }
