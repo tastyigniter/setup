@@ -3,10 +3,15 @@
 class SetupPDO extends PDO
 {
     protected $configHost;
+
     protected $configPort;
+
     protected $configDatabase;
+
     protected $configUsername;
+
     protected $configPassword;
+
     protected $configPrefix;
 
     public function __construct(string $dsn, string $username, string $passwd, array $options, array $config)
@@ -55,9 +60,13 @@ class SetupPDO extends PDO
 
     public function compareInstalledVersion()
     {
-        $installedVersion = $this->getAttribute(self::ATTR_SERVER_VERSION);
-        $installedVersion = explode('-', $installedVersion);
-        $installedVersion = array_shift($installedVersion);
+        $installedVersion = $this->query('select version()')->fetchColumn();
+
+        if (!(strpos($installedVersion, 'MariaDB') === FALSE)) {
+            return TRUE;
+        }
+
+        $installedVersion = substr($installedVersion, 0, 6);
 
         return version_compare($installedVersion, TI_MYSQL_VERSION, '>=');
     }
