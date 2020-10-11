@@ -182,8 +182,8 @@ var Installer = {
     checkRequirements: function () {
         var $requirements = Installer.$page.find('[data-requirement]'),
             $checkResult = $('#requirement-check-result').empty(),
-            failedAlertTemplate = $('[data-partial="alert_check_failed"]').clone().html(),
-            completeAlertTemplate = $('[data-partial="alert_check_complete"]').clone().html(),
+            failedAlertTemplate = $('[data-partial="_alert_check_failed"]').clone().html(),
+            completeAlertTemplate = $('[data-partial="_alert_check_complete"]').clone().html(),
             requestHandler = Installer.Steps.requirements.handler,
             requestChain = [],
             failCodes = [],
@@ -312,7 +312,7 @@ var Installer = {
         $.waterfall.apply(this, requestChain).always(function () {
         }).done(function () {
             if (!success) {
-                Installer.$pageContent.html($('[data-partial="install_failed"]').html())
+                Installer.$pageContent.html($('[data-partial="_alert__alert_install_failed"]').html())
                 $('.install_failed .message').text(failMessages.join('<br />'))
             } else {
                 Installer.$page.find('.card-header').addClass('fadeIn').removeClass('animated fadeOut d-none')
@@ -441,7 +441,7 @@ var Installer = {
         $btn.attr('disabled', true)
 
         Installer.$page.find('.card-header').addClass('animated fadeOut d-none')
-        Installer.$pageContent.html($('[data-partial="install_progress"]').html())
+        Installer.$pageContent.html($('[data-partial="_alert_install_progress"]').html())
 
         Installer.sendRequest('onInstall', _themeData).done(function (json) {
             Installer.processInstallSteps(json.result)

@@ -5,7 +5,7 @@
         </div>
         <div class="modal-body">
             <div class="text-center">
-                <i class="far fa-check-circle fa-5x text-success"></i>
+                <i class="fa fa-exclamation fa-3x text-danger"></i>
                 <h4 class="modal-title mt-4">Out-of-date TastyIgniter v2 found.</h4>
                 <p>An older version (v2) of TastyIgniter was found in the specified database.</p>
                 <p>By clicking <b>continue</b>, your existing database will be updated.</p>

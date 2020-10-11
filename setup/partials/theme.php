@@ -8,6 +8,12 @@
 
         <div class="card-footer">
             <div class="d-flex justify-content-between">
+                <a
+                    type="button"
+                    class="btn btn-link"
+                    target="_blank"
+                    href="{{homepage}}"
+                >View Demo&nbsp;&nbsp;<i class="fa fa-external-link-alt"></i></a>
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -15,12 +21,6 @@
                     data-theme-code="{{code}}"
                 >Install Theme
                 </button>
-                <a
-                    type="button"
-                    class="btn btn-link"
-                    target="_blank"
-                    href="{{homepage}}"
-                >View Demo&nbsp;&nbsp;<i class="fa fa-external-link-alt"></i></a>
             </div>
         </div>
     </div>

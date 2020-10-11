@@ -124,7 +124,7 @@ class SetupController
         $step = ($db AND $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
 
         if ($step == 'install' AND $this->post('upgrade') != 1) {
-            return ['modal' => 'upgrade'];
+            return ['modal' => '_popup_upgrade'];
         }
 
         $this->repository->set('database', $config);

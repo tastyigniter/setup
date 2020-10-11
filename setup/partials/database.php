@@ -75,7 +75,7 @@ $db = $setup->getDatabaseDetails();
     </div>
     <input type="hidden" name="disableLog" value="1">
 </div>
-<div class="card-footer p-4 buttons">
-    <button type="submit" class="btn btn-primary"><?= lang('text_next_step'); ?> <?= lang('button_admin'); ?></button>
+<div class="card-footer p-4 text-right">
     <a class="btn btn-link text-muted" href=""><?= lang('button_back'); ?></a>
+    <button type="submit" class="btn btn-primary"><?= lang('text_next_step'); ?> <?= lang('button_admin'); ?></button>
 </div>

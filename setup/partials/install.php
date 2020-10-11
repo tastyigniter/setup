@@ -16,21 +16,21 @@
         <div class="row text-center py-4">
             <div class="col-md-6">
                 <div class="card card-body shadow">
+                    <p>Without any extensions or theme, you can install them later.</p>
+                    <button
+                        class="btn btn-light border"
+                        data-install-control="install-core"
+                    ><?= lang('button_clean_install') ?></button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card card-body shadow">
                     <p>With a pre-built theme and some recommended extensions.</p>
                     <button
                         type="button"
                         class="btn btn-primary"
                         data-install-control="fetch-theme"
                     ><?= lang('button_choose_theme') ?></button>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card card-body shadow">
-                    <p>Without any extensions or theme, you can install them later.</p>
-                    <button
-                        class="btn btn-light border"
-                        data-install-control="install-core"
-                    ><?= lang('button_clean_install') ?></button>
                 </div>
             </div>
         </div>
