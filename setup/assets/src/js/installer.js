@@ -81,6 +81,11 @@ var Installer = {
             case 'retry-check':
                 Installer.checkRetry()
                 break
+            case 'load-license':
+                var modalTemplate = $('[data-partial="_popup_license"]').clone().html();
+                Installer.$pageModal.html(Mustache.render(modalTemplate))
+                Installer.$pageModal.modal()
+                break
             case 'accept-license':
                 Installer.sendRequest('onCheckLicense', {}).done(function (json) {
                     Installer.processResponse(json)

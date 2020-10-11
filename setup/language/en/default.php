@@ -13,14 +13,14 @@ function lang($key)
         'text_complete_heading' => 'Setup your site',
         'text_success_heading' => 'Installation Successful',
 
-        'text_license_sub_heading' => 'TastyIgniter End User Licence agreement(EULA).',
+        'text_license_sub_heading' => 'TastyIgniter End User Licence agreement (EULA).',
         'text_requirement_sub_heading' => 'Check below to make sure all system requirements are met.',
         'text_database_sub_heading' => 'Enter your database connection details.',
         'text_settings_sub_heading' => 'Enter your restaurant and administrator details.',
         'text_complete_sub_heading' => 'How do you want to set up your site?',
         'text_success_sub_heading' => 'Start receiving orders!',
 
-        'text_php_version' => 'PHP version '.TI_PHP_VERSION.' or greater required',
+        'text_php_version' => '- PHP version '.TI_PHP_VERSION.' or greater required',
         'text_mysql_version' => 'MySQL version '.TI_MYSQL_VERSION.' or greater required',
         'text_mysqli_installed' => '- is MySQLi PHP Extension installed?',
         'text_curl_installed' => '- cURL PHP Extension is required',
@@ -109,7 +109,7 @@ function lang($key)
         'button_cancel' => 'Cancel',
         'button_admin' => 'Application Setup',
         'button_install' => 'Setup your Site',
-        'button_accept' => 'Accept License',
+        'button_accept' => 'Accept license and proceed',
         'button_clean_install' => 'Fresh: No theme or extensions',
         'button_choose_theme' => 'Choose a pre-built theme',
 
