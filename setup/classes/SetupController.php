@@ -264,14 +264,14 @@ class SetupController
                 if (method_exists($this, $handler) AND ($result = $this->$handler()) !== null) {
                     $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, TRUE));
                     header('Content-Type: application/json');
-                    die(json_encode($result));
+                    exit(json_encode($result));
                 }
             }
             catch (Exception $ex) {
                 header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', TRUE, 500);
                 $this->writeLog('Handler error (%s): %s', $handler, $ex->getMessage());
                 $this->writeLog(['Trace log:', '%s'], $ex->getTraceAsString());
-                die($ex->getMessage());
+                exit($ex->getMessage());
             }
             exit;
         }
