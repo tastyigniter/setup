@@ -665,7 +665,7 @@ class SetupController
         }
     }
 
-    public static function generateKey()
+    protected static function generateKey()
     {
         return 'base64:'.base64_encode(random_bytes(32));
     }
