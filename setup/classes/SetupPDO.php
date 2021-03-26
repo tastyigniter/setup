@@ -36,7 +36,7 @@ class SetupPDO extends PDO
     public function isFreshlyInstalled()
     {
         $fetch = $this->query(
-            "show tables where tables_in_{$this->configDatabase} like '".
+            "show tables where `tables_in_{$this->configDatabase}` like '".
             str_replace('_', '\\_', $this->configPrefix)."%'",
             static::FETCH_NUM
         );
