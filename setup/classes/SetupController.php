@@ -32,9 +32,9 @@ class SetupController
         if (!$this->page)
             $this->page = new stdClass;
 
-        $this->page->currentStep = 'requirements';
-        if (isset($_GET['skipConfig']) AND $_GET['skipConfig'] == 1)
-            $this->page->currentStep = 'settings';
+        $this->page->currentStep = 'start';
+        if (isset($_GET['step']) AND strlen($_GET['step']) AND in_array($_GET['step'], ['requirements', 'database', 'settings']))
+            $this->page->currentStep = $_GET['step'];
 
         return $this->page;
     }
@@ -91,17 +91,12 @@ class SetupController
         return ['result' => $result];
     }
 
-    public function onCheckLicense()
+    public function onCompleteRequirements()
     {
-        if ($this->post('license_agreed') != 1)
-            throw new SetupException('Please accept the TastyIgniter license before proceeding.');
+        $this->repository->set('requirement', (string)$this->post('requirement'))->save();
+        $this->repository->set('license_agreed', (string)$this->post('license_agreed'))->save();
 
-        if (($requirement = $this->post('requirement')) != 'complete')
-            throw new SetupException('Error checking server requirements, please make sure all lights are green.');
-
-        $this->repository->set('requirement', $requirement)->save();
-
-        $this->writeLog('License & requirement check: %s', $requirement);
+        $this->writeLog('License Agreement: %s', 'accepted');
 
         return ['step' => 'database'];
     }
@@ -146,23 +141,32 @@ class SetupController
 
         if (!strlen($siteName))
             throw new SetupException('Please specify your restaurant name');
+
         if (!strlen($siteEmail = $this->post('site_email')))
             throw new SetupException('Please specify your restaurant email');
+
         if (!strlen($adminName = $this->post('staff_name')))
             throw new SetupException('Please specify the administrator name');
+
         if (!strlen($username = $this->post('username')))
             throw new SetupException('Please specify the administrator username');
+
         if (!strlen($password = $this->post('password'))
             OR strlen($password = $this->post('password')) < 6
         )
             throw new SetupException('Please specify the administrator password, at least 6 characters');
+
         if (!strlen($this->post('confirm_password')))
             throw new SetupException('Please confirm the administrator password');
+
         if ($this->post('confirm_password') != $password)
             throw new SetupException('Password does not match');
+
+        $this->repository->set('site_key', (string)$this->post('site_key'));
+
         $this->repository->set('settings', [
             'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
-            'demo_data' => $this->post('demo_data'),
+            'demo_data' => (int)$this->post('demo_data'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
             'staff_name' => $adminName,
@@ -174,15 +178,6 @@ class SetupController
         $this->writeLog('Settings %s', ($result ? '+OK' : '=FAIL'));
 
         return $result ? ['step' => 'install'] : ['result' => $result];
-    }
-
-    public function onFetchItems()
-    {
-        return $this->requestRemoteData('items', [
-            'browse' => 'popular',
-            'type' => 'theme',
-            'include' => 'require',
-        ]);
     }
 
     public function onInstall()
@@ -400,11 +395,11 @@ class SetupController
     {
         $params = $items = [];
 
-        if (!strlen($themeCode = $this->post('code')))
+        if (!strlen($themeCode = $this->post('themeCode')))
             return $params;
 
-        if (is_array($dependencies = $this->post('require'))) {
-            foreach ($dependencies['data'] as $dependency) {
+        if ($dependencies = $this->fetchThemeDependencies($themeCode)) {
+            foreach ($dependencies as $dependency) {
                 $items[] = ['name' => $dependency['code'], 'type' => $dependency['type']];
             }
         }
@@ -536,7 +531,7 @@ class SetupController
             'ti_setup' => 'installed',
             'ti_version' => array_get($core, 'version'),
             'sys_hash' => array_get($core, 'hash'),
-            'site_key' => $this->post('site_key'),
+            'site_key' => $this->repository->get('site_key'),
             'default_location_id' => \Admin\Models\Locations_model::first()->location_id,
         ]);
 
@@ -731,7 +726,11 @@ class SetupController
 
     protected function confirmRequirements()
     {
-        $requirement = $this->post('requirement', $this->repository->get('requirement'));
+        $licenseAgreed = $this->repository->get('license_agreed');
+        if (!strlen($licenseAgreed) OR $licenseAgreed != 'accepted')
+            throw new SetupException('Please accept the TastyIgniter license before proceeding.');
+
+        $requirement = $this->repository->get('requirement');
         if (!strlen($requirement) OR $requirement != 'complete')
             throw new SetupException('Please make sure your system meets all requirements');
     }
@@ -914,7 +913,7 @@ class SetupController
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
 
-        if (strlen($siteKey = $this->post('site_key'))) {
+        if (strlen($siteKey = $this->repository->get('site_key'))) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
         }
 
@@ -935,6 +934,24 @@ class SetupController
         }
 
         return $results;
+    }
+
+    protected function fetchThemeDependencies($themeCode)
+    {
+        $theme = $this->requestRemoteData('item/detail', [
+            'item' => [
+                'name' => 'tastyigniter-orange',
+                'type' => 'theme',
+            ],
+            'include' => 'require',
+        ]);
+
+        if (!isset($theme['data']['require']['data'])
+            OR !is_array($theme['data']['require']['data'])
+            OR !count($theme['data']['require']['data'])
+        ) return [];
+
+        return $theme['data']['require']['data'];
     }
 
     //

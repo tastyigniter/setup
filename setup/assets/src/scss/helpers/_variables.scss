@@ -1,14 +1,14 @@
 $white: #FFFFFF !default;
-$gray-100: #FCFDFF !default;
+$black: #121113 !default;
+$gray-100: #F7F6F8 !default;
 $gray-200: #EAE9EB !default;
-$gray-300: #D1D0D2 !default;
-$gray-400: #BBC1D6 !default;
-$gray-500: #898FA4 !default;
-$gray-600: #6F758A !default;
-$gray-700: #565C71 !default;
-$gray-800: #3C4257 !default;
-$gray-900: #23293E !default;
-$black: #000329 !default;
+$gray-300: #DEDDDF !default;
+$gray-400: #C4C3C5 !default;
+$gray-500: #ABAAAC !default;
+$gray-600: #787779 !default;
+$gray-700: #454446 !default;
+$gray-800: #2B2A2C !default;
+$gray-900: $black !default;
 //
 // Colors
 //
@@ -50,13 +50,13 @@ $fa-font-path: $icon-font-path;
 
 // Body
 //
-$body-bg: $gray-200 !default;
+$body-bg: $gray-100 !default;
 $body-color: $gray-800 !default;
 
 $font-size-base: 0.875rem !default;
-$font-weight-bold: 600 !default;
+$font-weight-bold: 500 !default;
 
-$headings-font-weight: 500 !default;
+$headings-font-weight: 400 !default;
 
 $text-muted: $gray-600 !default;
 
@@ -68,6 +68,7 @@ $spacer: 1rem !default;
 //
 //$border-width:                          0 !default;
 $border-color: $gray-200 !default;
+$border-radius: .425rem !default;
 
 $btn-font-weight: $font-weight-bold !default;
 

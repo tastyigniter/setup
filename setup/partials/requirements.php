@@ -38,24 +38,28 @@ $definitions = [
     ],
 ];
 ?>
+<h2 class="mb-3"><?= lang('text_requirement_heading'); ?></h2>
+<p class="lead mb-4"><?= lang('text_requirement_sub_heading'); ?></p>
+
 <div id="requirements">
     <div class="list-group list-group-flush list-requirement">
         <?php foreach ($definitions as $code => $requirement) { ?>
             <div
-                class="list-group-item py-3 animated pulse d-none"
+                class="list-group-item rounded border shadow-sm mb-2 animated"
                 data-requirement="<?= $code; ?>"
                 data-label="<?= lang($requirement['label']); ?>"
                 data-hint="<?= lang($requirement['hint']); ?>"
             >
                 <div class="d-flex align-items-center">
+                    <div data-label class="flex-grow-1 px-2 fw-bold text-muted"><?= lang($requirement['label']); ?></div>
                     <div class="px-2">
-                        <i class="spinner-border spinner-border-sm" role="status"></i>
+                        <i data-spinner class="fas fa-circle text-muted" role="status"></i>
                     </div>
-                    <div class="px-2 font-weight-bold"><?= lang($requirement['label']); ?></div>
                 </div>
             </div>
         <?php } ?>
     </div>
 </div>
+<input type="hidden" name="license_agreed" value="accepted">
 
 <div id="requirement-check-result"></div>
