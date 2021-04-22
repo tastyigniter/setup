@@ -165,7 +165,7 @@ class SetupController
         $this->repository->set('site_key', (string)$this->post('site_key'));
 
         $this->repository->set('settings', [
-            'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
+            'site_location_mode' => $this->post('site_location_mode'),
             'demo_data' => (int)$this->post('demo_data'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
@@ -621,7 +621,8 @@ class SetupController
     protected function rewriteConfigFiles()
     {
         if (!file_exists($this->configDirectory.'/database.php')
-            OR !file_exists($this->configDirectory.'/app.php'))
+            OR !file_exists($this->configDirectory.'/app.php')
+            OR !file_exists($this->configDirectory.'/system.php'))
             return;
 
         $this->configRewrite->toFile(
@@ -645,6 +646,13 @@ class SetupController
                 'name' => $setting['site_name'],
                 'url' => $this->getBaseUrl(),
                 'key' => $this->generateKey(),
+            ]
+        );
+
+        $this->configRewrite->toFile(
+            $this->configDirectory.'/system.php',
+            [
+                'locationMode' => $setting['site_location_mode'],
             ]
         );
     }
@@ -700,7 +708,7 @@ class SetupController
     public function getSettingsDetails()
     {
         $defaults = [
-            'site_location_mode' => 0,
+            'site_location_mode' => 'multiple',
             'site_name' => 'TastyIgniter',
             'site_email' => 'admin@restaurant.com',
             'staff_name' => 'Chef Sam',

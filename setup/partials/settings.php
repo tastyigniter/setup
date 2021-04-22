@@ -95,14 +95,14 @@ $settings = $setup->getSettingsDetails();
 <div class="border-top pt-3 mt-4">
     <div class="row">
         <div class="form-group col">
-            <input type="hidden" name="site_location_mode" value="0">
+            <input type="hidden" name="site_location_mode" value="single">
             <div class="form-check form-switch">
                 <input
                     class="form-check-input"
                     type="checkbox"
                     id="input-site-location-mode"
                     name="site_location_mode"
-                    value="1"
+                    value="multiple"
                     <?= $settings->site_location_mode == 1 ? 'checked' : ''; ?>
                 />
                 <label
