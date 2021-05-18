@@ -95,8 +95,10 @@ class SetupController
     {
         if ($this->post('license_agreed') != 1)
             throw new SetupException('Please accept the TastyIgniter license before proceeding.');
+
         if (($requirement = $this->post('requirement')) != 'complete')
             throw new SetupException('Error checking server requirements, please make sure all lights are green.');
+
         $this->repository->set('requirement', $requirement)->save();
 
         $this->writeLog('License & requirement check: %s', $requirement);
@@ -491,9 +493,7 @@ class SetupController
 
         $staff->staff_name = $config['staff_name'];
         $staff->staff_role_id = \Admin\Models\Staff_roles_model::first()->staff_role_id;
-        $staff->staff_location_id = \Admin\Models\Locations_model::first()->location_id;
         $staff->language_id = \System\Models\Languages_model::first()->language_id;
-        $staff->timezone = FALSE;
         $staff->staff_status = TRUE;
         $staff->save();
 

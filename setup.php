@@ -121,7 +121,7 @@ $partialList = [
 
     Installer.Steps.proceed.view = "[data-partial=\"proceed\"]"
     Installer.Steps.proceed.title = "&#127881;&nbsp;Yippee!"
-    Installer.Steps.proceed.subTitle = "Setup has been successfully completed"
+    Installer.Steps.proceed.subTitle = "Your restaurant website is ready!"
 
     Installer.init()
 </script>
