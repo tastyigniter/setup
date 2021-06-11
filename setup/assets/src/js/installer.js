@@ -324,7 +324,7 @@ var Installer = {
                 $('.install_failed .message').text(failMessages.join('<br />'))
             } else {
                 Installer.updateWizard('proceed')
-                Installer.renderView('proceed', {proceedUrl: proceedUrl, frontUrl: '/'})
+                Installer.renderView('proceed', {proceedUrl: proceedUrl ? proceedUrl : '/admin/login', frontUrl: '/'})
             }
         })
     },
