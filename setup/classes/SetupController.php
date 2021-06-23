@@ -228,7 +228,8 @@ class SetupController
                 $this->repository->set('core', $item);
                 break;
             case 'writeConfig':
-                $this->rewriteConfigFiles();
+                $this->moveExampleFile('env', 'example', null);
+                $this->rewriteEnvFile();
                 $result = TRUE;
                 break;
             case 'finishInstall':
@@ -621,6 +622,30 @@ class SetupController
         $this->writeLog('Unable to open [%s] archive file %s', $fileCode, basename($filePath));
 
         return FALSE;
+    }
+
+    protected function rewriteEnvFile()
+    {
+        $env = $this->baseDirectory.'/.env';
+
+        if (!file_exists($env))
+            return;
+
+        $database = $this->repository->get('database');
+        foreach ($database as $config => $value) {
+            $this->replaceInFile('DB_'.strtoupper($config).'=', 'DB_'.strtoupper($config).'='.$value, $env);
+        }
+
+        // Boot the framework after database config has been written
+        // to eliminate database connection error.
+        $this->bootFramework();
+
+        $setting = $this->repository->get('settings');
+
+        $this->replaceInFile('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
+        $this->replaceInFile('APP_NAME=', 'APP_NAME='.$setting['site_name'], $env);
+        $this->replaceInFile('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
+        $this->replaceInFile('TASTYIGNITER_LOCATION_MODE=multiple', 'TASTYIGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
     }
 
     protected function rewriteConfigFiles()
