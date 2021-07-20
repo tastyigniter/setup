@@ -244,8 +244,11 @@ class SetupController
                 $this->repository->set('core', $item);
                 break;
             case 'writeConfig':
+                $this->moveExampleFile('env', null, 'backup');
                 $this->moveExampleFile('env', 'example', null);
+
                 $this->rewriteEnvFile();
+
                 $result = TRUE;
                 break;
             case 'finishInstall':
@@ -654,46 +657,7 @@ class SetupController
         $this->replaceInFile('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
         $this->replaceInFile('APP_NAME=', 'APP_NAME='.$setting['site_name'], $env);
         $this->replaceInFile('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
-        $this->replaceInFile('TASTYIGNITER_LOCATION_MODE=multiple', 'TASTYIGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
-    }
-
-    protected function rewriteConfigFiles()
-    {
-        if (!file_exists($this->configDirectory.'/database.php')
-            OR !file_exists($this->configDirectory.'/app.php')
-            OR !file_exists($this->configDirectory.'/system.php'))
-            return;
-
-        $this->configRewrite->toFile(
-            $this->configDirectory.'/database.php',
-            $this->arrayDot([
-                'default' => 'mysql',
-                'connections' => [
-                    'mysql' => $this->repository->get('database'),
-                ],
-            ])
-        );
-
-        // Boot the framework after database config has been written
-        // to eliminate database connection error.
-        $this->bootFramework();
-
-        $setting = $this->repository->get('settings');
-        $this->configRewrite->toFile(
-            $this->configDirectory.'/app.php',
-            [
-                'name' => $setting['site_name'],
-                'url' => $this->getBaseUrl(),
-                'key' => $this->generateKey(),
-            ]
-        );
-
-        $this->configRewrite->toFile(
-            $this->configDirectory.'/system.php',
-            [
-                'locationMode' => $setting['site_location_mode'],
-            ]
-        );
+        $this->replaceInFile('IGNITER_LOCATION_MODE=multiple', 'IGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
     }
 
     protected function moveExampleFile($name, $old, $new)
@@ -969,22 +933,6 @@ class SetupController
         }
 
         return $curl;
-    }
-
-    protected function arrayDot($array, $prepend = '')
-    {
-        $results = [];
-
-        foreach ($array as $key => $value) {
-            if (is_array($value) && !empty($value)) {
-                $results = array_merge($results, $this->arrayDot($value, $prepend.$key.'.'));
-            }
-            else {
-                $results[$prepend.$key] = $value;
-            }
-        }
-
-        return $results;
     }
 
     protected function fetchThemeDependencies($themeCode)
