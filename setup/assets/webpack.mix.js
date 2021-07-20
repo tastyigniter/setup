@@ -7,12 +7,6 @@ mix.setPublicPath('./').options({
 mix.copyDirectory(
     'node_modules/@fortawesome/fontawesome-free-webfonts/webfonts',
     'fonts/FontAwesome'
-).copyDirectory(
-    'node_modules/@fortawesome/fontawesome-free-webfonts/scss',
-    'src/scss/vendor/FontAwesome'
-).copyDirectory(
-    'node_modules/bootstrap/scss',
-    'src/scss/vendor/bootstrap'
 );
 
 mix.copy(

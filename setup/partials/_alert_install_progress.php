@@ -2,7 +2,7 @@
     <div class="mt-4">
         <i
             class="spinner-border spinner-border-lg text-muted"
-            style="width: 3rem; height: 3rem;border-width: .4em;"
+            style="width: 6rem; height: 6rem;border-width: .2em;"
             role="status"
         ></i>
     </div>

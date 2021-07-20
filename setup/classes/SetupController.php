@@ -1,15 +1,35 @@
 <?php
 
+use Admin\Models\Locations_model;
+use Admin\Models\Staff_groups_model;
+use Admin\Models\Staff_roles_model;
+use Admin\Models\Staffs_model;
+use Admin\Models\Users_model;
+use Carbon\Carbon;
+use System\Classes\ExtensionManager;
+use System\Classes\UpdateManager;
+use System\Database\Seeds\DatabaseSeeder;
+use System\Models\Languages_model;
+use System\Models\Themes_model;
+
 /**
  * SetupController Class
  */
 class SetupController
 {
-    const TI_ENDPOINT = 'https://api.tastyigniter.com/v2';
+    public const TI_ENDPOINT = 'https://api.tastyigniter.com/v2';
 
     public $page;
 
     public $logFile;
+
+    protected string $baseDirectory;
+
+    protected string $tempDirectory;
+
+    protected string $configDirectory;
+
+    protected $repository;
 
     public function __construct()
     {
@@ -32,9 +52,9 @@ class SetupController
         if (!$this->page)
             $this->page = new stdClass;
 
-        $this->page->currentStep = 'requirements';
-        if (isset($_GET['skipConfig']) AND $_GET['skipConfig'] == 1)
-            $this->page->currentStep = 'settings';
+        $this->page->currentStep = 'start';
+        if (isset($_GET['step']) AND strlen($_GET['step']) AND in_array($_GET['step'], ['requirements', 'database', 'settings']))
+            $this->page->currentStep = $_GET['step'];
 
         return $this->page;
     }
@@ -91,15 +111,12 @@ class SetupController
         return ['result' => $result];
     }
 
-    public function onCheckLicense()
+    public function onCompleteRequirements()
     {
-        if ($this->post('license_agreed') != 1)
-            throw new SetupException('Please accept the TastyIgniter license before proceeding.');
-        if (($requirement = $this->post('requirement')) != 'complete')
-            throw new SetupException('Error checking server requirements, please make sure all lights are green.');
-        $this->repository->set('requirement', $requirement)->save();
+        $this->repository->set('requirement', (string)$this->post('requirement'))->save();
+        $this->repository->set('license_agreed', (string)$this->post('license_agreed'))->save();
 
-        $this->writeLog('License & requirement check: %s', $requirement);
+        $this->writeLog('License Agreement: %s', 'accepted');
 
         return ['step' => 'database'];
     }
@@ -124,7 +141,7 @@ class SetupController
         $step = ($db AND $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
 
         if ($step == 'install' AND $this->post('upgrade') != 1) {
-            return ['modal' => 'upgrade'];
+            return ['modal' => '_popup_upgrade'];
         }
 
         $this->repository->set('database', $config);
@@ -144,23 +161,31 @@ class SetupController
 
         if (!strlen($siteName))
             throw new SetupException('Please specify your restaurant name');
+
         if (!strlen($siteEmail = $this->post('site_email')))
             throw new SetupException('Please specify your restaurant email');
+
         if (!strlen($adminName = $this->post('staff_name')))
             throw new SetupException('Please specify the administrator name');
+
         if (!strlen($username = $this->post('username')))
             throw new SetupException('Please specify the administrator username');
-        if (!strlen($password = $this->post('password'))
-            OR strlen($password = $this->post('password')) < 6
-        )
+
+        $password = $this->post('password');
+        if (!strlen($password) OR strlen($password) < 6)
             throw new SetupException('Please specify the administrator password, at least 6 characters');
+
         if (!strlen($this->post('confirm_password')))
             throw new SetupException('Please confirm the administrator password');
+
         if ($this->post('confirm_password') != $password)
             throw new SetupException('Password does not match');
+
+        $this->repository->set('site_key', (string)$this->post('site_key'));
+
         $this->repository->set('settings', [
-            'site_location_mode' => $this->post('site_location_mode') == 1 ? 'single' : 'multiple',
-            'demo_data' => $this->post('demo_data'),
+            'site_location_mode' => $this->post('site_location_mode'),
+            'demo_data' => (int)$this->post('demo_data'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
             'staff_name' => $adminName,
@@ -172,15 +197,6 @@ class SetupController
         $this->writeLog('Settings %s', ($result ? '+OK' : '=FAIL'));
 
         return $result ? ['step' => 'install'] : ['result' => $result];
-    }
-
-    public function onFetchItems()
-    {
-        return $this->requestRemoteData('items', [
-            'browse' => 'popular',
-            'type' => 'theme',
-            'include' => 'require',
-        ]);
     }
 
     public function onInstall()
@@ -306,15 +322,8 @@ class SetupController
 
     protected function testDbConnection($config = [])
     {
-        extract($config);
-
-        // Try connecting to database using the specified driver
-        $dsn = 'mysql:host='.$host.';dbname='.$database;
-        if ($port) $dsn .= ';port='.$port;
-
         try {
-            $options = [SetupPDO::ATTR_ERRMODE => SetupPDO::ERRMODE_EXCEPTION];
-            $db = new \SetupPDO($dsn, $username, $password, $options, $config);
+            $db = SetupPDO::makeFromConfig($config);
 
             if (!$db->compareInstalledVersion())
                 throw new SetupException('Connection failed: '.lang('text_mysql_version'));
@@ -399,11 +408,11 @@ class SetupController
     {
         $params = $items = [];
 
-        if (!strlen($themeCode = $this->post('code')))
+        if (!strlen($themeCode = $this->post('themeCode')))
             return $params;
 
-        if (is_array($dependencies = $this->post('require'))) {
-            foreach ($dependencies['data'] as $dependency) {
+        if ($dependencies = $this->fetchThemeDependencies($themeCode)) {
+            foreach ($dependencies as $dependency) {
                 $items[] = ['name' => $dependency['code'], 'type' => $dependency['type']];
             }
         }
@@ -461,14 +470,15 @@ class SetupController
         $this->setSeederProperties($this->repository->get('settings'));
 
         // Install the database tables
-        \System\Classes\UpdateManager::instance()->update();
+        UpdateManager::instance()->update();
 
         // Create the admin user if no admin exists.
         $this->createSuperUser();
 
-        $systemSettingsInstalled = $this->addSystemParameters();
+        $this->addSystemParameters();
+
         if ($this->repository->get('settingsInstalled', FALSE) === TRUE)
-            return $systemSettingsInstalled;
+            return;
 
         // Save the site configuration to the settings table
         $this->addSystemSettings();
@@ -477,31 +487,29 @@ class SetupController
     protected function createSuperUser()
     {
         // Abort: a super admin user already exists
-        if (\Admin\Models\Users_model::where('super_user', 1)->count())
+        if (Users_model::where('super_user', 1)->count())
             return TRUE;
 
         if ($this->repository->get('settingsInstalled') === TRUE)
-            return optional(\Admin\Models\Users_model::first())->update(['super_user' => 1]);
+            return optional(Users_model::first())->update(['super_user' => 1]);
 
         $config = $this->repository->get('settings');
 
         $staffEmail = strtolower($config['site_email']);
-        $staff = \Admin\Models\Staffs_model::firstOrNew([
+        $staff = Staffs_model::firstOrNew([
             'staff_email' => $staffEmail,
         ]);
 
         $staff->staff_name = $config['staff_name'];
-        $staff->staff_role_id = \Admin\Models\Staff_roles_model::first()->staff_role_id;
-        $staff->staff_location_id = \Admin\Models\Locations_model::first()->location_id;
-        $staff->language_id = \System\Models\Languages_model::first()->language_id;
-        $staff->timezone = FALSE;
+        $staff->staff_role_id = Staff_roles_model::first()->staff_role_id;
+        $staff->language_id = Languages_model::first()->language_id;
         $staff->staff_status = TRUE;
         $staff->save();
 
-        $staff->groups()->attach(\Admin\Models\Staff_groups_model::first()->staff_group_id);
-        $staff->locations()->attach(\Admin\Models\Locations_model::first()->location_id);
+        $staff->groups()->attach(Staff_groups_model::first()->staff_group_id);
+        $staff->locations()->attach(Locations_model::first()->location_id);
 
-        $user = \Admin\Models\Users_model::firstOrNew([
+        $user = Users_model::firstOrNew([
             'username' => $config['username'],
         ]);
 
@@ -509,7 +517,7 @@ class SetupController
         $user->password = $config['password'];
         $user->super_user = TRUE;
         $user->is_activated = TRUE;
-        $user->date_activated = \Carbon\Carbon::now();
+        $user->date_activated = Carbon::now();
 
         return $user->save();
     }
@@ -537,8 +545,8 @@ class SetupController
             'ti_setup' => 'installed',
             'ti_version' => array_get($core, 'version'),
             'sys_hash' => array_get($core, 'hash'),
-            'site_key' => $this->post('site_key'),
-            'default_location_id' => \Admin\Models\Locations_model::first()->location_id,
+            'site_key' => $this->repository->get('site_key'),
+            'default_location_id' => Locations_model::first()->location_id,
         ]);
 
         // These parameter are no longer in use
@@ -555,11 +563,11 @@ class SetupController
             if ($item['type'] != 'extension')
                 continue;
 
-            \System\Classes\ExtensionManager::instance()->installExtension($item['code']);
+            ExtensionManager::instance()->installExtension($item['code'], $item['version']);
         }
 
-        \System\Models\Themes_model::syncAll();
-        \System\Models\Themes_model::activateTheme($this->repository->get('activeTheme', 'demo'));
+        Themes_model::syncAll();
+        Themes_model::activateTheme($this->repository->get('activeTheme', 'demo'));
     }
 
     protected function cleanUpAfterInstall()
@@ -574,10 +582,10 @@ class SetupController
 
     protected function setSeederProperties($properties)
     {
-        \System\Database\Seeds\DatabaseSeeder::$siteName = $properties['site_name'];
-        \System\Database\Seeds\DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
-        \System\Database\Seeds\DatabaseSeeder::$staffName = $properties['staff_name'];
-        \System\Database\Seeds\DatabaseSeeder::$seedDemo = (bool)$properties['demo_data'];
+        DatabaseSeeder::$siteName = $properties['site_name'];
+        DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
+        DatabaseSeeder::$staffName = $properties['staff_name'];
+        DatabaseSeeder::$seedDemo = (bool)$properties['demo_data'];
     }
 
     //
@@ -588,7 +596,7 @@ class SetupController
     {
         $fileName = md5($fileCode).'.zip';
 
-        return "{$this->tempDirectory}/{$fileName}";
+        return "$this->tempDirectory/$fileName";
     }
 
     protected function downloadFile($fileCode, $fileHash, $params)
@@ -607,8 +615,9 @@ class SetupController
         if ($directory)
             $extractTo .= '/'.$directory.str_replace('.', '/', $fileCode);
 
-        if (!file_exists($extractTo))
-            mkdir($extractTo, 0777, TRUE);
+        if (!file_exists($extractTo) AND !mkdir($extractTo, 0777, TRUE) AND !is_dir($extractTo)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $extractTo));
+        }
 
         $zip = new ZipArchive();
         if ($zip->open($filePath) === TRUE) {
@@ -651,7 +660,8 @@ class SetupController
     protected function rewriteConfigFiles()
     {
         if (!file_exists($this->configDirectory.'/database.php')
-            OR !file_exists($this->configDirectory.'/app.php'))
+            OR !file_exists($this->configDirectory.'/app.php')
+            OR !file_exists($this->configDirectory.'/system.php'))
             return;
 
         $this->configRewrite->toFile(
@@ -677,6 +687,13 @@ class SetupController
                 'key' => $this->generateKey(),
             ]
         );
+
+        $this->configRewrite->toFile(
+            $this->configDirectory.'/system.php',
+            [
+                'locationMode' => $setting['site_location_mode'],
+            ]
+        );
     }
 
     protected function moveExampleFile($name, $old, $new)
@@ -690,7 +707,7 @@ class SetupController
         }
     }
 
-    public static function generateKey()
+    protected static function generateKey()
     {
         return 'base64:'.base64_encode(random_bytes(32));
     }
@@ -730,7 +747,7 @@ class SetupController
     public function getSettingsDetails()
     {
         $defaults = [
-            'site_location_mode' => 0,
+            'site_location_mode' => 'multiple',
             'site_name' => 'TastyIgniter',
             'site_email' => 'admin@restaurant.com',
             'staff_name' => 'Chef Sam',
@@ -756,7 +773,11 @@ class SetupController
 
     protected function confirmRequirements()
     {
-        $requirement = $this->post('requirement', $this->repository->get('requirement'));
+        $licenseAgreed = $this->repository->get('license_agreed');
+        if (!strlen($licenseAgreed) OR $licenseAgreed != 'accepted')
+            throw new SetupException('Please accept the TastyIgniter license before proceeding.');
+
+        $requirement = $this->repository->get('requirement');
         if (!strlen($requirement) OR $requirement != 'complete')
             throw new SetupException('Please make sure your system meets all requirements');
     }
@@ -765,15 +786,19 @@ class SetupController
     {
         if (!is_file($this->baseDirectory.'/vendor/tastyigniter/flame/src/Support/helpers.php'))
             throw new SetupException('Missing vendor files.');
+
         $autoloadFile = $this->baseDirectory.'/bootstrap/autoload.php';
         if (!file_exists($autoloadFile))
             throw new SetupException('Autoloader file was not found.');
+
         include $autoloadFile;
 
         $appFile = $this->baseDirectory.'/bootstrap/app.php';
         if (!file_exists($appFile))
             throw new SetupException('App loader file was not found.');
+
         $app = require_once $appFile;
+
         $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
     }
 
@@ -911,7 +936,7 @@ class SetupController
         $fileSha = sha1_file($filePath);
         if ($expectedHash != $fileSha) {
             $this->writeLog(file_get_contents($filePath));
-            $this->writeLog("Download failed, File hash mismatch: {$expectedHash} (expected) vs {$fileSha} (actual)");
+            $this->writeLog("Download failed, File hash mismatch: $expectedHash (expected) vs $fileSha (actual)");
             @unlink($filePath);
 
             throw new SetupException('Downloaded files from server are corrupt, check setup.log');
@@ -933,13 +958,13 @@ class SetupController
         curl_setopt($curl, CURLOPT_URL, static::TI_ENDPOINT.'/'.$uri);
         curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params, '', '&'));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
 
         // Used to skip SSL Check on Wamp Server which causes the Live Status Check to fail
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
 
-        if (strlen($siteKey = $this->post('site_key'))) {
+        if (strlen($siteKey = $this->repository->get('site_key'))) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
         }
 
@@ -960,6 +985,24 @@ class SetupController
         }
 
         return $results;
+    }
+
+    protected function fetchThemeDependencies($themeCode)
+    {
+        $theme = $this->requestRemoteData('item/detail', [
+            'item' => [
+                'name' => $themeCode ?? 'tastyigniter-orange',
+                'type' => 'theme',
+            ],
+            'include' => 'require',
+        ]);
+
+        if (!isset($theme['data']['require']['data'])
+            OR !is_array($theme['data']['require']['data'])
+            OR !count($theme['data']['require']['data'])
+        ) return [];
+
+        return $theme['data']['require']['data'];
     }
 
     //
