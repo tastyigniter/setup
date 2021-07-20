@@ -26,6 +26,19 @@ class SetupPDO extends PDO
         parent::__construct($dsn, $username, $passwd, $options);
     }
 
+    public static function makeFromConfig(array $config)
+    {
+        extract($config);
+
+        // Try connecting to database using the specified driver
+        $dsn = 'mysql:host='.$host.';dbname='.$database;
+        if ($port) $dsn .= ';port='.$port;
+
+        $options = [self::ATTR_ERRMODE => self::ERRMODE_EXCEPTION];
+
+        return new self($dsn, $username, $password, $options, $config);
+    }
+
     public function config($key, $default = null)
     {
         $item = 'config'.ucfirst($key);
