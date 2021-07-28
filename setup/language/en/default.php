@@ -58,7 +58,7 @@ function lang($key)
         'text_fetch_extensions' => 'Fetching extensions from the TastyIgniter Marketplace...',
 
         'label_requirement' => 'Requirement Field',
-        'label_php_version' => 'PHP Version (required 7.2+)',
+        'label_php_version' => 'PHP Version (required '.TI_PHP_VERSION.'+)',
         'label_register_globals' => 'Register Globals',
         'label_magic_quotes' => 'Magic Quotes GPC',
         'label_file_uploads' => 'File Uploads',
