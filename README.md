@@ -10,18 +10,8 @@ Using this wizard is the recommended way to install and setup TastyIgniter.
 4. Run the TastyIgniter setup script by accessing setup.php in your web browser. Example, http://example.com/setup.php or http://example.com/folder/setup.php
 5. Follow all onscreen instructions and make sure all installation requirements are checked.
 
-### Minimum Requirements
-
-These are the requirements for your  web hosting to run TastyIgniter:
-
-- PHP 7.2+
-- MySQL 5.6+
-- PDO PHP Extension
-- cURL PHP Extension
-- OpenSSL PHP Extension
-- GD PHP Extension
-- Mcrypt PHP Extension
-- Mbstrings PHP Extension
+### Installation
+Please read the [Installation Guide](https://tastyigniter.com/docs/installation) for more information.
 
 ### License
 The MIT License (MIT). Please see License File for more information.
