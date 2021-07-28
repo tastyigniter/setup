@@ -94,7 +94,7 @@ class SetupController
                 $result = ini_get('file_uploads');
                 break;
             case 'connection':
-                $result = ($this->requestRemoteData('ping') !== null);
+                $result = $this->checkLiveConnection();
                 break;
             case 'writable':
                 @rmdir($this->tempDirectory);
@@ -645,19 +645,19 @@ class SetupController
 
         $database = $this->repository->get('database');
         foreach ($database as $config => $value) {
-            $this->replaceInFile('DB_'.strtoupper($config).'=', 'DB_'.strtoupper($config).'='.$value, $env);
+            $this->replaceInEnv('DB_'.strtoupper($config).'=', 'DB_'.strtoupper($config).'='.$value, $env);
         }
+
+        $setting = $this->repository->get('settings');
+
+        $this->replaceInEnv('APP_NAME=', 'APP_NAME='.$setting['site_name'], $env);
+        $this->replaceInEnv('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
+        $this->replaceInEnv('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
+        $this->replaceInEnv('IGNITER_LOCATION_MODE=', 'IGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
 
         // Boot the framework after database config has been written
         // to eliminate database connection error.
         $this->bootFramework();
-
-        $setting = $this->repository->get('settings');
-
-        $this->replaceInFile('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
-        $this->replaceInFile('APP_NAME=', 'APP_NAME='.$setting['site_name'], $env);
-        $this->replaceInFile('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
-        $this->replaceInFile('IGNITER_LOCATION_MODE=multiple', 'IGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
     }
 
     protected function moveExampleFile($name, $old, $new)
@@ -674,6 +674,16 @@ class SetupController
     protected static function generateKey()
     {
         return 'base64:'.base64_encode(random_bytes(32));
+    }
+
+    protected function replaceInEnv(string $search, string $replace)
+    {
+        $file = $this->baseDirectory.'/.env';
+
+        file_put_contents(
+            $file,
+            preg_replace('/^'.$search.'(.*)$/m', $replace, file_get_contents($file))
+        );
     }
 
     //
@@ -913,7 +923,12 @@ class SetupController
 
     protected function prepareRequest($uri, $params = [])
     {
-        $params['url'] = base64_encode($this->getBaseUrl());
+        $params['client'] = 'tastyigniter';
+        $params['server'] = base64_encode(serialize([
+            'php' => PHP_VERSION,
+            'url' => $this->getBaseUrl(),
+            'version' => $this->repository->get('ti_version'),
+        ]));
 
         if (isset($_GET['edge']) AND $_GET['edge'] == 1)
             $params['edge'] = 1;
@@ -1006,5 +1021,15 @@ class SetupController
 
         $this->writeLog('.============================ POST REQUEST ==========================.', ['hideTime' => TRUE]);
         $this->writeLog('Postback payload: %s', print_r($postData, TRUE));
+    }
+
+    protected function checkLiveConnection()
+    {
+        $result = $this->requestRemoteData('ping') ?: [];
+
+        $latestVersion = $result['pong'];
+        $this->repository->set('ti_version', $latestVersion);
+
+        return (bool)strlen($latestVersion);
     }
 }
