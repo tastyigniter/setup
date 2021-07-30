@@ -650,7 +650,7 @@ class SetupController
 
         $setting = $this->repository->get('settings');
 
-        $this->replaceInEnv('APP_NAME=', 'APP_NAME='.$setting['site_name'], $env);
+        $this->replaceInEnv('APP_NAME=', 'APP_NAME="'.$setting['site_name'].'"', $env);
         $this->replaceInEnv('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
         $this->replaceInEnv('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
         $this->replaceInEnv('IGNITER_LOCATION_MODE=', 'IGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
