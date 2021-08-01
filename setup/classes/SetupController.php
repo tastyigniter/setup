@@ -693,7 +693,7 @@ class SetupController
 
         file_put_contents(
             $file,
-            preg_replace("/^{$search}.*/m", $replace, file_get_contents($file))
+            preg_replace('/^'.$search.'(.*)$/m', $replace, file_get_contents($file))
         );
     }
 
