@@ -40,7 +40,6 @@ class SetupController
         $this->logFile = SETUPPATH.'/setup.log';
         $this->writePostToLog();
 
-        $this->configRewrite = new ConfigRewrite;
         $this->repository = new SetupRepository(SETUPPATH.'/setup_config');
 
         // Execute post handler
