@@ -258,7 +258,7 @@ class SetupController
                 $this->cleanUpAfterInstall();
 
                 $this->moveExampleFile('htaccess', null, 'backup');
-                $this->moveExampleFile('htaccess', 'example', null);
+                $this->copyExampleFile('htaccess', 'example', null);
 
                 $result = admin_url('login');
                 break;
@@ -645,6 +645,7 @@ class SetupController
 
         $database = $this->repository->get('database');
         foreach ($database as $config => $value) {
+            if ($config === 'password') $value = '"'.$value.'"';
             $this->replaceInEnv('DB_'.strtoupper($config).'=', 'DB_'.strtoupper($config).'='.$value, $env);
         }
 
@@ -671,6 +672,17 @@ class SetupController
         }
     }
 
+    protected function copyExampleFile($name, $old, $new)
+    {
+        // /$old.$name => /$new.$name
+        if (file_exists($this->baseDirectory.'/'.$old.'.'.$name)) {
+            if (file_exists($this->baseDirectory.'/'.$new.'.'.$name))
+                unlink($this->baseDirectory.'/'.$new.'.'.$name);
+
+            copy($this->baseDirectory.'/'.$old.'.'.$name, $this->baseDirectory.'/'.$new.'.'.$name);
+        }
+    }
+
     protected static function generateKey()
     {
         return 'base64:'.base64_encode(random_bytes(32));
@@ -682,7 +694,7 @@ class SetupController
 
         file_put_contents(
             $file,
-            preg_replace('/^'.$search.'(.*)$/m', $replace, file_get_contents($file))
+            preg_replace("/^{$search}.*/m", $replace, file_get_contents($file))
         );
     }
 
