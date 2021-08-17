@@ -360,9 +360,12 @@ class SetupController
         if (isset($config['password']) AND is_string($config['password']))
             $result['password'] = $config['password'];
 
-        $result['prefix'] = 'ti_';
+        $result['prefix'] = '';
         if (isset($config['prefix']) AND is_string($config['prefix']))
             $result['prefix'] = trim($config['prefix']);
+
+        if ($result['prefix'] == '')
+            $result['prefix'] = 'ti_';
 
         return $result;
     }
