@@ -183,7 +183,6 @@ class SetupController
         $this->repository->set('site_key', (string)$this->post('site_key'));
 
         $this->repository->set('settings', [
-            'site_location_mode' => $this->post('site_location_mode'),
             'demo_data' => (int)$this->post('demo_data'),
             'site_name' => $siteName,
             'site_email' => $siteEmail,
