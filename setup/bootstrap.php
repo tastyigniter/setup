@@ -1,7 +1,7 @@
 <?php
 
 // Constants
-define('TI_PHP_VERSION', '7.3');
+define('TI_PHP_VERSION', '7.4');
 define('TI_MYSQL_VERSION', '5.7');
 define('SETUPPATH', __DIR__);
 define('BASEPATH', dirname(SETUPPATH));
