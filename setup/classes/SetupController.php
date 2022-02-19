@@ -1,16 +1,15 @@
 <?php
 
-use Admin\Models\Locations_model;
-use Admin\Models\Staff_groups_model;
-use Admin\Models\Staff_roles_model;
-use Admin\Models\Staffs_model;
-use Admin\Models\Users_model;
-use Carbon\Carbon;
+use Admin\Facades\AdminAuth;
+use Admin\Models\Location;
+use Admin\Models\User;
+use Admin\Models\UserGroup;
+use Admin\Models\UserRole;
 use System\Classes\ExtensionManager;
 use System\Classes\UpdateManager;
 use System\Database\Seeds\DatabaseSeeder;
-use System\Models\Languages_model;
-use System\Models\Themes_model;
+use System\Models\Language;
+use System\Models\Theme;
 
 /**
  * SetupController Class
@@ -488,37 +487,26 @@ class SetupController
     protected function createSuperUser()
     {
         // Abort: a super admin user already exists
-        if (Users_model::where('super_user', 1)->count())
+        if (User::where('super_user', 1)->count())
             return TRUE;
 
         if ($this->repository->get('settingsInstalled') === TRUE)
-            return optional(Users_model::first())->update(['super_user' => 1]);
+            return optional(User::first())->update(['super_user' => 1]);
 
         $config = $this->repository->get('settings');
 
-        $staffEmail = strtolower($config['site_email']);
-        $staff = Staffs_model::firstOrNew([
-            'staff_email' => $staffEmail,
-        ]);
-
-        $staff->staff_name = $config['staff_name'];
-        $staff->staff_role_id = Staff_roles_model::first()->staff_role_id;
-        $staff->language_id = Languages_model::first()->language_id;
-        $staff->staff_status = TRUE;
-        $staff->save();
-
-        $staff->groups()->attach(Staff_groups_model::first()->staff_group_id);
-        $staff->locations()->attach(Locations_model::first()->location_id);
-
-        $user = Users_model::firstOrNew([
+        $user = AdminAuth::register([
+            'email' => strtolower($config['site_email']),
+            'name' => $config['staff_name'],
+            'status' => TRUE,
             'username' => $config['username'],
-        ]);
-
-        $user->staff_id = $staff->staff_id;
-        $user->password = $config['password'];
-        $user->super_user = TRUE;
-        $user->is_activated = TRUE;
-        $user->date_activated = Carbon::now();
+            'password' => $config['password'],
+            'super_user' => TRUE,
+            'groups' => [UserGroup::first()->user_group_id],
+            'locations' => [Location::first()->location_id],
+            'language_id' => Language::first()->language_id,
+            'user_role_id' => UserRole::first()->user_role_id,
+        ], TRUE);
 
         return $user->save();
     }
@@ -547,7 +535,7 @@ class SetupController
             'ti_version' => array_get($core, 'version'),
             'sys_hash' => array_get($core, 'hash'),
             'site_key' => $this->repository->get('site_key'),
-            'default_location_id' => Locations_model::first()->location_id,
+            'default_location_id' => Location::first()->location_id,
         ]);
 
         // These parameter are no longer in use
@@ -567,8 +555,8 @@ class SetupController
             ExtensionManager::instance()->installExtension($item['code'], $item['version']);
         }
 
-        Themes_model::syncAll();
-        Themes_model::activateTheme($this->repository->get('activeTheme', 'demo'));
+        Theme::syncAll();
+        Theme::activateTheme($this->repository->get('activeTheme', 'demo'));
     }
 
     protected function cleanUpAfterInstall()
