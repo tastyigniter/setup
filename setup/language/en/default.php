@@ -98,6 +98,7 @@ function lang($key)
         'help_username' => 'Enter the database username.',
         'help_password' => 'Enter the database password.',
         'help_dbprefix' => 'The database table prefix. Do not change unless you have to.',
+        'help_demo_data' => 'You can easily delete demo data, it helps you get started.',
         'help_site_location_mode' => 'You can change this setting later under the System General Settings',
         'help_extensions' => 'Enjoy TastyIgniter extended core features with these extensions',
         'help_site_key' => 'A Site Carté key is required to add/update item from the TastyIgniter Marketplace. Get one by creating a site from your <a href="%s" target="_blank">TastyIgniter Account</a>, if you haven\'t already.',

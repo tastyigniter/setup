@@ -1,35 +1,7 @@
-<div class="d-flex bs-wizard">
-    <div class="col bs-wizard-step" data-wizard="requirements">
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <span class="bs-wizard-dot"></span>
-    </div>
-    <div class="col bs-wizard-step" data-wizard="database">
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <span class="bs-wizard-dot"></span>
-    </div>
-    <div class="col bs-wizard-step" data-wizard="settings">
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <span class="bs-wizard-dot"></span>
-    </div>
-    <div class="col bs-wizard-step" data-wizard="install">
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <span class="bs-wizard-dot"></span>
-    </div>
-    <div class="col bs-wizard-step" data-wizard="proceed">
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <span class="bs-wizard-dot"></span>
-    </div>
-    <div class="px-2 bs-wizard-step" data-wizard="proceed">
-        <span class="bs-wizard-dot"></span>
-    </div>
-</div>
+<ol class="list-decimal space-y-2 text-gray-400 font-medium pl-4">
+    <li :class="{'text-gray-800': currentStep === 'license'}" data-wizard="license">EULA</li>
+    <li :class="{'text-gray-800': currentStep === 'requirements'}" data-wizard="requirements">Requirements</li>
+    <li :class="{'text-gray-700': currentStep === 'database'}" data-wizard="database">Database</li>
+    <li :class="{'text-gray-600': currentStep === 'settings'}" data-wizard="settings">Settings</li>
+    <li :class="{'text-gray-600': currentStep === 'install'}" data-wizard="install">Complete Setup</li>
+</ol>

@@ -1,145 +1,143 @@
 <?php
 $settings = $setup->getSettingsDetails();
 ?>
-<h2 class="mb-3"><?= lang('text_settings_heading'); ?></h2>
-<p class="lead mb-4"><?= lang('text_settings_sub_heading'); ?></p>
+<h1 class="text-3xl font-medium mb-3"><?= lang('text_settings_heading'); ?></h1>
+<p class="text-gray-500 mb-4"><?= lang('text_settings_sub_heading'); ?></p>
 
-<div class="row mb-3">
+<div class="grid gap-4 grid-cols-2">
     <div class="col">
         <div class="form-floating">
+            <label for="input-staff-name" class="text-sm block font-medium mb-1"><?= lang('label_staff_name'); ?></label>
             <input
                 type="text"
                 name="staff_name"
                 id="input-staff-name"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
                 value="<?= $settings->staff_name; ?>"
             />
-            <label for="input-staff-name"><?= lang('label_staff_name'); ?></label>
         </div>
     </div>
     <div class="col">
         <div class="form-floating">
+            <label for="input-username" class="text-sm block font-medium mb-1"><?= lang('label_admin_username'); ?></label>
             <input
                 type="text"
                 name="username"
                 id="input-username"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
                 value="<?= $settings->username; ?>"
             />
-            <label for="input-username"><?= lang('label_admin_username'); ?></label>
         </div>
     </div>
-</div>
-<div class="row mb-3">
     <div class="col">
         <div class="form-floating">
+            <label for="input-password" class="text-sm block font-medium mb-1"><?= lang('label_admin_password'); ?></label>
             <input
                 type="password"
                 name="password"
                 id="input-password"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
             />
-            <label for="input-password"><?= lang('label_admin_password'); ?></label>
         </div>
     </div>
     <div class="col">
         <div class="form-floating">
+            <label for="input-confirm-password" class="text-sm block font-medium mb-1"><?= lang('label_confirm_password'); ?></label>
             <input
                 type="password"
                 name="confirm_password"
                 id="input-confirm-password"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
             />
-            <label for="input-confirm-password"><?= lang('label_confirm_password'); ?></label>
         </div>
     </div>
-</div>
-<div class="row mb-3">
     <div class="col">
         <div class="form-floating">
+            <label for="input-site-name" class="text-sm block font-medium mb-1"><?= lang('label_site_name'); ?></label>
             <input
                 type="text"
                 name="site_name"
                 id="input-site-name"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
                 value="<?= $settings->site_name; ?>"
             />
-            <label for="input-site-name"><?= lang('label_site_name'); ?></label>
         </div>
     </div>
     <div class="col">
         <div class="form-floating">
+            <label for="input-site-email" class="text-sm block font-medium mb-1"><?= lang('label_site_email'); ?></label>
             <input
                 type="text"
                 name="site_email"
                 id="input-site-email"
-                class="form-control"
+                class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600"
                 value="<?= $settings->site_email; ?>"
             />
-            <label for="input-site-email"><?= lang('label_site_email'); ?></label>
         </div>
     </div>
 </div>
-<div class="form-group mb-3">
+<div class="p-3 bg-gray-200 rounded my-5">
     <div class="form-floating">
+        <label for="input-carte-key" class="text-sm block font-medium mb-1"><?= lang('label_site_key'); ?></label>
         <input
             id="input-carte-key"
             type="text"
-            class="form-control"
+            class="form-input w-full border-gray-300 rounded focus:ring-orange-600 focus:border-orange-600 mb-1"
             name="site_key"
         />
-        <label for="input-carte-key"><?= lang('label_site_key'); ?></label>
     </div>
-    <div class="form-text text-muted"><?= sprintf(lang('help_site_key'), '//tastyigniter.com/account/sites'); ?></div>
+    <div class="text-sm text-gray-500"><?= sprintf(lang('help_site_key'), '//tastyigniter.com/account/sites'); ?></div>
 </div>
-<div class="border-top pt-3 mt-4">
-    <div class="row">
-        <div class="form-group col">
-            <input type="hidden" name="site_location_mode" value="single">
-            <div class="form-check form-switch">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="input-site-location-mode"
-                    name="site_location_mode"
-                    value="multiple"
-                    <?= $settings->site_location_mode == 1 ? 'checked' : ''; ?>
-                />
-                <label
-                    class="form-check-label"
-                    for="input-site-location-mode"
-                ><?= lang('label_site_location_mode'); ?></label>
-            </div>
-            <span class="form-text text-muted"><?= lang('help_site_location_mode'); ?></span>
-        </div>
-        <div class="form-group col">
-            <input type="hidden" name="demo_data" value="0">
-            <div class="form-check form-switch">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="input-demo-data"
-                    name="demo_data"
-                    value="1"
-                    <?= $settings->demo_data == 1 ? 'checked' : ''; ?>
-                />
-                <label
-                    class="form-check-label"
-                    for="input-demo-data"
-                ><?= lang('label_demo_data'); ?></label>
-            </div>
-        </div>
+<div class="flex items-center p-3 rounded bg-white border border-gray-200 shadow-inner mb-3">
+    <input type="hidden" name="site_location_mode" value="single">
+    <input
+        class="form-checkbox rounded text-orange-600 border-gray-300 focus:ring-orange-600 focus:border-orange-600 w-6 h-6 mr-3"
+        type="checkbox"
+        id="input-site-location-mode"
+        name="site_location_mode"
+        value="multiple"
+        <?= $settings->site_location_mode == 1 ? 'checked' : ''; ?>
+    />
+    <div class="form-check">
+        <label
+            class="form-check-label"
+            for="input-site-location-mode"
+        >
+            <span class="font-medium"><?= lang('label_site_location_mode'); ?></span>
+            <span class="block text-sm text-gray-500"><?= lang('help_site_location_mode'); ?></span>
+        </label>
     </div>
 </div>
+<div class="flex items-center p-3 rounded bg-white border border-gray-200 shadow-inner">
+    <input type="hidden" name="demo_data" value="0">
+    <input
+        class="form-checkbox rounded text-orange-600 border-gray-300 focus:ring-orange-600 focus:border-orange-600 w-6 h-6 mr-3"
+        type="checkbox"
+        id="input-demo-data"
+        name="demo_data"
+        value="1"
+        <?= $settings->demo_data == 1 ? 'checked' : ''; ?>
+    />
+    <div class="form-check">
+        <label
+            class="form-check-label"
+            for="input-demo-data"
+        >
+            <span class="font-medium"><?= lang('label_demo_data'); ?></span>
+            <span class="block text-sm text-gray-500"><?= lang('help_demo_data'); ?></span>
+        </label>
+    </div>
+</div>
+
 <input type="hidden" name="disableLog" value="1">
 
 <div class="pt-4">
     <button
         type="submit"
-        class="btn btn-primary w-100"
+        class="bg-red bg-orange-600 w-full transition duration-150 ease-in-out rounded text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
     ><?= lang('text_next_step'); ?> <?= lang('button_install'); ?></button>
     <a
-        class="btn btn-link mt-3 text-muted w-100"
+        class="hover:underline block mt-3 text-center"
         href="/setup.php"
     ><?= lang('button_back'); ?></a>
 </div>

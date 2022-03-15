@@ -1,6 +1,8 @@
-var Installer = {
+window.Installer = {
 
     currentStep: null,
+
+    hideSidebar: true,
 
     options: {
         page: "#page",
@@ -12,14 +14,15 @@ var Installer = {
     },
 
     Steps: {
-        start: {handler: "onLoadLicence"},
-        license: {handler: "onCompleteRequirements"},
-        requirements: {handler: "onCheckRequirements"},
-        database: {handler: "onCheckDatabase"},
-        settings: {handler: "onValidateSettings"},
+        start: {handler: "onLoadLicence", view: "[data-partial=\"start\"]"},
+        requirements: {handler: "onCheckRequirements", view: "[data-partial=\"requirements\"]"},
+        license: {handler: "onCompleteRequirements", view: "[data-partial=\"license\"]"},
+        database: {handler: "onCheckDatabase", view: "[data-partial=\"database\"]"},
+        settings: {handler: "onValidateSettings", view: "[data-partial=\"settings\"]"},
         install: {
             dataCache: {},
             handler: "onInstall",
+            view: "[data-partial=\"install\"]",
             steps: {
                 download: {
                     msg: "Downloading {{name}} {{type}}...",
@@ -39,358 +42,334 @@ var Installer = {
                 }
             }
         },
-        proceed: {proceedUrl: '/admin/settings', frontUrl: '/'},
+        proceed: {proceedUrl: '/admin/settings', frontUrl: '/', view: "[data-partial=\"proceed\"]"},
         success: {}
     },
 
-    init: function () {
-        Installer.$page = $(Installer.options.page)
-        Installer.$pageContent = Installer.$page.find('[data-html="content"]')
-        Installer.$pageModal = Installer.$page.find('[data-html="modal"]')
-        Installer.$progressBox = $(Installer.options.progressBox)
-        Installer.currentStep = $(Installer.options.currentStepSelector).val()
-        Installer.$form = $(Installer.options.form)
+    init() {
+        var self = this
+        self.$page = document.querySelector(self.options.page)
+        self.$pageContent = self.$page.querySelector('[data-html="content"]')
+        self.$progressBox = document.querySelector(self.options.progressBox)
+        self.$currentStep = document.querySelector(self.options.currentStepSelector)
+        self.currentStep = self.$currentStep.value
+        self.$form = document.querySelector(self.options.form)
 
-        // render
-        Installer.updateWizard(Installer.currentStep)
-        Installer.renderView(Installer.currentStep)
+        render(function () {
+            self.updateWizard(self.currentStep)
+            self.renderView(self.currentStep)
 
-        $(document).ready(function () {
-            Installer.$submitBtn = $(Installer.options.submitButton)
-            Installer.$form.submit(Installer.submitForm)
-            Installer.$page.on('click', '[data-install-control]', Installer.onControlClick)
-            Installer.$pageModal.on('hidden.bs.modal', Installer.onModalHidden)
+            self.$submitBtn = document.querySelector(self.options.submitButton)
+            document.addEventListener('click', function (event) {
+                if (event.target && event.target.hasAttribute('data-install-control')) {
+                    self.onControlClick(event.target)
+                }
+            })
+
+            // self.$pageModal.on('hidden.bs.modal', self.onModalHidden)
         })
     },
 
-    submitForm: function (e) {
-        e.preventDefault()
-        if (!Installer.$submitBtn.hasClass('disabled')) {
-            Installer.currentStep = $(Installer.options.currentStepSelector).val()
-            Installer.processForm()
+    submitForm() {
+        if (this.$submitBtn && !this.$submitBtn.classList.contains('disabled')) {
+            this.currentStep = this.$currentStep.value
+            this.hideSidebar = this.currentStep === 'start' || this.currentStep === 'proceed'
+            this.processForm()
         }
     },
 
-    onControlClick: function (event) {
-        var $button = $(event.currentTarget),
-            control = $button.data('installControl')
+    onControlClick($button) {
+        const control = $button.getAttribute('data-install-control')
 
         switch (control) {
             case 'retry-check':
-                Installer.checkRetry()
+                this.checkRetry()
                 break
             case 'load-license':
-                Installer.processResponse({step: 'license'})
+                this.processResponse({step: 'license'})
                 break
             case 'accept-license':
-                Installer.processResponse({step: 'requirements'})
+                this.processResponse({step: 'requirements'})
                 break
             case 'complete-requirements':
-                Installer.sendRequest('onCompleteRequirements', {}).done(function (json) {
-                    Installer.processResponse(json)
+                var self = this
+                this.sendRequest('onCompleteRequirements', {}).then(function (json) {
+                    self.processResponse(json)
                 })
                 break
             case 'install-fresh':
             case 'install-prebuilt':
-                Installer.processInstall($button, control)
+                this.processInstall($button, control)
                 break
         }
     },
 
-    onModalHidden: function (event) {
+    onModalHidden(event) {
         var $modal = $(event.currentTarget)
         $modal.find('.modal-dialog').remove()
     },
 
-    disableSubmitButton: function (disabled) {
-        if (Installer.$submitBtn && Installer.$submitBtn.length) {
+    disableSubmitButton(disabled) {
+        if (this.$submitBtn && this.$submitBtn.length) {
 
-            Installer.$submitBtn.prop("disabled", disabled)
+            this.$submitBtn.prop("disabled", disabled)
             if (disabled) {
-                Installer.$submitBtn.addClass("disabled")
+                this.$submitBtn.addClass("disabled")
             } else {
-                Installer.$submitBtn.removeClass("disabled")
+                this.$submitBtn.removeClass("disabled")
             }
         }
     },
 
-    getHandler: function (currentStep) {
-        var step = Installer.Steps[currentStep]
+    getHandler(currentStep) {
+        var step = this.Steps[currentStep]
 
         return step.handler
     },
 
-    processForm: function () {
-        if (Installer.$form.length) {
-            var progressMessage = Installer.getAlert(Installer.currentStep),
-                requestHandler = Installer.getHandler(Installer.currentStep)
+    processForm() {
+        if (this.$form.length) {
+            var self = this,
+                progressMessage = this.getAlert(this.currentStep),
+                requestHandler = this.getHandler(this.currentStep)
 
-            Installer.sendRequest(requestHandler, {}, progressMessage).done(function (json) {
-                Installer.processResponse(json)
-            })
+            self
+                .sendRequest(requestHandler, {}, progressMessage)
+                .then(function (json) {
+                    self.processResponse(json)
+                })
+                .catch(function (response) {
+                    response.then(function (text) {
+                        self.flashMessage("danger", text)
+                    })
+                })
         }
     },
 
-    sendRequest: function (handler, data, message) {
-        data.handler = handler
-        var postData = (typeof Installer.$form !== "undefined")
-            ? Installer.$form.serialize() + (typeof data === "undefined" ? ""
-            : "&" + $.param(data)) : []
+    sendRequest(handler, data, message) {
+        var self = this,
+            postData = new FormData(self.$form)
 
-        Installer.disableSubmitButton(true)
+        postData.append('handler', handler)
+        for (const key in data) {
+            postData.set(key, data[key])
+        }
 
-        return $.ajax({
-            async: true,
-            type: "POST",
-            cache: true,
-            data: postData,
-        }).done(function () {
-            Installer.disableSubmitButton(false)
-        }).fail(function (xhr) {
-            Installer.disableSubmitButton(false)
-            Installer.flashMessage("danger", xhr.responseText)
-        })
+        self.disableSubmitButton(true)
+        return fetch('setup.php', {method: "POST", body: postData})
+            .then(function (response) {
+                self.disableSubmitButton(false)
+                if (response.ok) {
+                    return Promise.resolve(response.json())
+                } else {
+                    return Promise.reject(response.text())
+                }
+            })
     },
 
-    getAlert: function (step) {
-        if (Installer.Steps.hasOwnProperty(step))
-            return Installer.Steps[step].msg
+    getAlert(step) {
+        if (this.Steps.hasOwnProperty(step))
+            return this.Steps[step].msg
     },
 
-    checkRetry: function () {
-        Installer.checkRequirements()
+    checkRetry() {
+        this.renderView('requirements')
+        this.checkRequirements()
     },
 
-    updateWizard: function (step) {
-        var steps = [
-            "license",
-            "requirements",
-            "database",
-            "settings",
-            "install",
-            "proceed"
-        ]
-
-        $(Installer.options.currentStepSelector).val(step);
-        $('body').attr('class', step);
-        Installer.currentStep = step;
-        //
-        // for (var index in steps) {
-        //     var $step = Installer.$page.find('[data-wizard="' + steps[index] + '"]')
-        //     $step.removeClass('in-progress').addClass('complete')
-        //
-        //     if (steps[index] === step) {
-        //         $step.addClass('in-progress')
-        //         break
-        //     }
-        // }
+    updateWizard(step) {
+        this.$currentStep.value = step;
+        document.querySelector('body').classList.add(step);
+        this.currentStep = step;
+        this.hideSidebar = step === 'start' || step === 'proceed'
     },
 
-    checkRequirements: function () {
-        var $requirements = Installer.$page.find('[data-requirement]'),
-            $checkResult = $('#requirement-check-result').empty(),
-            failedAlertTemplate = $('[data-partial="_alert_check_failed"]').clone().html(),
-            completeAlertTemplate = $('[data-partial="_alert_check_complete"]').clone().html(),
-            requestHandler = Installer.Steps.requirements.handler,
+    checkRequirements() {
+        var self = this,
+            $requirements = this.$page.querySelectorAll('[data-requirement]'),
+            $checkResult = document.querySelector('#requirement-check-result'),
+            failedAlertTemplate = document.querySelector('[data-partial="_alert_check_failed"]').cloneNode(true).innerHTML,
+            completeAlertTemplate = document.querySelector('[data-partial="_alert_check_complete"]').cloneNode(true).innerHTML,
+            requestHandler = this.Steps.requirements.handler,
             requestChain = [],
             failCodes = [],
             failMessages = [],
             success = true
 
-        $.each($requirements, function (index, requirement) {
-
-            var $requirement = $(requirement),
-                data = $requirement.data(),
-                timeout = 1500
-
+        $requirements.forEach((requirement, index) => {
             requestChain.push(function () {
-                var deferred = $.Deferred(),
-                    $requirementStatus = $requirement.find('[role="status"]')
+                requirement.classList.remove('opacity-25')
+                const $failureStatus = requirement.querySelector('.failure')
 
-                $requirement.addClass('pulse')
-                $requirement.find('[data-label]').removeClass('text-muted')
-                $requirement.find('[data-spinner]')
-                    .removeClass('fas fa-circle text-muted')
-                    .addClass('spinner-grow spinner-grow-sm')
-
-                Installer.sendRequest(requestHandler, {
-                    code: data.requirement
-                }).done(function (json) {
-                    setTimeout(function () {
-                        if (json.result) {
-                            $requirement.addClass('done')
-                            $requirementStatus.addClass('fas fa-circle text-success').removeClass('spinner-grow')
-                            deferred.resolve()
+                return self
+                    .sendRequest(requestHandler, {
+                        code: requirement.getAttribute('data-requirement')
+                    })
+                    .then(function (json) {
+                        requirement.querySelector('.loading').classList.add('hidden')
+                        if (json && json.result) {
+                            requirement.querySelector('.success').classList.remove('hidden')
                         } else {
                             success = false
-                            $requirement.addClass('failed')
-                            $requirementStatus.addClass('fas fa-circle text-danger').removeClass('spinner-grow')
-                            $requirementStatus.attr('title', data.hint)
-                            failCodes.push(data.requirement)
-                            failMessages.push(data.hint)
-                            deferred.resolve()
+                            $failureStatus.classList.remove('hidden')
+                            $failureStatus.setAttribute('title', requirement.getAttribute('data-hint'))
+                            failCodes.push(requirement.getAttribute('data-requirement'))
+                            failMessages.push(requirement.getAttribute('data-hint'))
                         }
-                        deferred.resolve()
-                    }, timeout)
-                }).fail(function () {
-                    setTimeout(function () {
-                        success = false
-                        failCodes.push(data.requirement)
-                        failMessages.push(data.hint)
-                        $requirement.addClass('failed')
-                        $requirementStatus.attr('title', data.hint)
-                        deferred.resolve()
-                    }, timeout)
-                })
-
-                return deferred
+                    })
             })
         })
 
-        $.waterfall.apply(this, requestChain).always(function () {
-        }).done(function (arr) {
-            if (!success) {
-                $checkResult.append(Mustache.render(failedAlertTemplate, {
-                    code: failCodes.join(', '),
-                    message: failMessages.join('<br> ')
-                }))
-                $checkResult.show().addClass('animated fadeIn')
-            } else {
-                Installer.$form.append('<input type="hidden" name="requirement" value="complete">')
-                $checkResult.append(Mustache.render(completeAlertTemplate))
-                $checkResult.show().addClass('animated fadeIn')
-            }
-        })
+        requestChain
+            .reduce(function (x, y) {
+                return x.then(y);
+            }, Promise.resolve())
+            .then(function (x) {
+                if (!success) {
+                    $checkResult.innerHTML = Mustache.render(failedAlertTemplate, {
+                        code: failCodes.join(', '),
+                        message: failMessages.join('<br> ')
+                    })
+                } else {
+                    Installer.$form.querySelector('[name="requirement"]').value = 'complete'
+                    $checkResult.innerHTML = Mustache.render(completeAlertTemplate)
+                }
+            })
     },
 
-    processInstallSteps: function (steps) {
-        var success = true,
+    processInstallSteps(steps) {
+        let self = this,
+            success = true,
             requestChain = [],
             failMessages = [],
             proceedUrl = null,
-            $progressMessage = Installer.$pageContent.find('.install-progress .message')
+            $progressMessage = this.$pageContent.querySelector('.install-progress .message')
 
-        $.each(steps, function (index, stepItems) {
+        for (const index in steps) {
+            let stepItems = steps[index],
+                step = self.Steps.install.steps[index]
 
-            var step = Installer.Steps.install.steps[index]
-
-            $.each(stepItems, function (itemIndex, item) {
-                var timeout = 500
-
-                requestChain.push(function () {
-                    var postData,
-                        deferred = $.Deferred(),
+            stepItems.forEach((item, itemIndex) => {
+                requestChain.push(() => {
+                    const postData = {
+                            process: item.process,
+                            disableLog: true,
+                            item: item
+                        },
                         beforeSendMessage = Mustache.render(step.msg, item)
 
-                    postData = {
-                        process: item.process,
-                        disableLog: true,
-                        item: item
-                    }
+                    $progressMessage.textContent = beforeSendMessage
 
-                    $progressMessage.text(beforeSendMessage)
-
-                    Installer.sendRequest('onInstall', postData, beforeSendMessage)
-                        .done(function (json) {
-                            setTimeout(function () {
-                                if (json.result) {
-                                    if (index === "install") proceedUrl = json.result
-                                    deferred.resolve()
-                                } else {
-                                    success = false
-                                    var errorMessage = Mustache.render(step.error, item)
-                                    $progressMessage.text(errorMessage)
-                                    failMessages.push(errorMessage)
-                                    deferred.resolve()
-                                }
-                                deferred.resolve()
-                            }, timeout)
-                        })
-                        .fail(function () {
-                            setTimeout(function () {
+                    return self
+                        .sendRequest('onInstall', postData, beforeSendMessage)
+                        .then(function (json) {
+                            if (json.result) {
+                                if (index === "install") proceedUrl = json.result
+                            } else {
                                 success = false
-                                deferred.resolve()
-                            }, timeout)
+                                var errorMessage = Mustache.render(step.error, item)
+                                $progressMessage.text(errorMessage)
+                                failMessages.push(errorMessage)
+                            }
                         })
-
-                    return deferred
+                        .catch(function () {
+                            success = false
+                        })
                 })
             })
-        })
+        }
 
-        $.waterfall.apply(this, requestChain).done(function () {
-            if (!success) {
-                Installer.$pageContent.html($('[data-partial="_alert__alert_install_failed"]').html())
-                $('.install_failed .message').text(failMessages.join('<br />'))
-            } else {
-                Installer.updateWizard('proceed')
-                Installer.renderView('proceed', {proceedUrl: proceedUrl ? proceedUrl : '/admin/login', frontUrl: '/'})
-            }
-        })
+        requestChain
+            .reduce(function (x, y) {
+                return x.then(y);
+            }, Promise.resolve())
+            .then(function (x) {
+                if (!success) {
+                    self.$pageContent.innerHTML = Mustache.render(document.querySelector(
+                        '[data-partial="_alert_install_failed"]'
+                    ).innerHTML)
+                    document.querySelector('.install_failed .message').textContent = failMessages.join('<br />')
+                } else {
+                    self.updateWizard('proceed')
+                    self.renderView('proceed', {proceedUrl: proceedUrl ? proceedUrl : '/admin/login', frontUrl: '/'})
+                }
+            })
     },
 
-    renderView: function (name, data) {
-        var pageData = Installer.Steps[name],
+    renderView(name, data) {
+        var pageData = this.Steps[name],
             view = pageData.view
 
         if (!pageData)
             pageData = {}
 
-        // if (pageData.title) {
-        //     Installer.$page.find("[data-html=\"title\"]").html(pageData.title)
-        // }
-        //
-        // if (pageData.subTitle) {
-        //     Installer.$page.find("[data-html=\"subTitle\"]").html(pageData.subTitle)
-        // }
-
         if (name) {
-            var viewHtml = Mustache.render($(view).html(), $.extend(pageData, data, {}))
-            Installer.$pageContent.html(viewHtml)
+            this.$pageContent.innerHTML = Mustache.render(
+                document.querySelector(view).innerHTML, {...pageData, ...data}
+            )
         }
 
-        if (Installer.currentStep === 'requirements') {
-            Installer.checkRequirements()
+        if (this.currentStep === 'requirements') {
+            this.checkRequirements()
         }
 
-        Installer.$pageModal.modal('hide')
+        // this.$pageModal.modal('hide')
     },
 
-    flashMessage: function (type, message) {
+    flashMessage(type, message) {
         if (!message)
             return
 
-        var $flashMessage = $(Installer.options.flashMessageSelector),
-            $alert = $('<div />', {
-                class: 'animated bounceIn shadow alert alert-' + type+' alert-dismissible'
+        var $flashMessage = document.querySelector(this.options.flashMessageSelector),
+            $alert = document.createElement('div'),
+            alertTemplate = document.querySelector('[data-partial="alert-'+type+'"]').innerHTML
+
+        $alert.innerHTML = Mustache.render(alertTemplate, {message: message})
+
+        $flashMessage.classList.remove('hidden')
+        $flashMessage.appendChild($alert)
+
+        if (type == 'danger') {
+            $alert.addEventListener('click', function (event) {
+                event.currentTarget.remove()
             })
-
-        $flashMessage.empty()
-
-        $flashMessage.addClass('show')
-        $alert.append(message)
-        $alert.append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"></button>')
-        $flashMessage.append($alert)
-
-        if (type !== 'danger')
-            $alert.delay(5000).fadeOut(400, function () {
-                $(this).remove()
-            })
+        } else {
+            setTimeout(function () {
+                $alert.remove()
+            }, 5000)
+        }
     },
 
-    processResponse: function (json) {
-        var flashMessage = json.flash,
+    processResponse(json) {
+        var self = this,
+            flashMessage = json.flash,
             showModal = json.modal,
             nextStep = json.step
 
         if (flashMessage) {
-            Installer.flashMessage(flashMessage.type, flashMessage.message)
+            self.flashMessage(flashMessage.type, flashMessage.message)
         }
 
         if (showModal) {
-            var modalTemplate = $('[data-partial="' + showModal + '"]').clone().html();
-            Installer.$pageModal.html(Mustache.render(modalTemplate))
-            Installer.$pageModal.modal()
+            window.Swal.fire({
+                icon: 'warning',
+                html: Mustache.render(document.querySelector('[data-partial="'+showModal+'"]').innerHTML),
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: '!bg-orange-600 !shadow-orange-600/50',
+                    cancelButton: '!bg-white !border !border-solid !border-gray-800 !text-gray-800',
+                },
+                confirmButtonText: 'Yes, proceed!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const $el = document.createElement('input')
+                    $el.setAttribute('type', 'hidden')
+                    $el.setAttribute('name', 'upgrade')
+                    $el.setAttribute('value', '1')
+                    self.$form.appendChild($el)
+                    self.submitForm()
+                }
+            })
         }
 
         switch (nextStep) {
@@ -399,30 +378,32 @@ var Installer = {
             case 'database':
             case 'settings':
             case 'install':
-                Installer.updateWizard(nextStep)
-                Installer.renderView(nextStep)
+                this.updateWizard(nextStep)
+                this.renderView(nextStep)
                 break
         }
     },
 
-    processInstall: function ($btn, control) {
-        var installData = {
-            themeCode: $btn.data('themeCode'),
-            process: 'apply',
-            disableLog: true
-        }
+    processInstall($btn, control) {
+        var self = this,
+            installData = {
+                themeCode: $btn.dataset.themeCode,
+                process: 'apply',
+                disableLog: true
+            }
 
-        $btn.attr('disabled', true)
+        $btn.setAttribute('disabled', true)
+        self.$pageContent.innerHTML = document.querySelector('[data-partial="_alert_install_progress"]').innerHTML
 
-        Installer.$pageContent.html($('[data-partial="_alert_install_progress"]').html())
-
-        Installer.sendRequest('onInstall', installData).done(function (json) {
-            Installer.processInstallSteps(json.result)
-        }).fail(function () {
-                Installer.$pageContent.html($('[data-partial="install"]').html())
+        self
+            .sendRequest('onInstall', installData)
+            .then(function (json) {
+                $btn.setAttribute('disabled', false)
+                self.processInstallSteps(json.result)
             })
-            .always(function () {
-                $btn.attr('disabled', false)
+            .catch(function () {
+                $btn.setAttribute('disabled', false)
+                self.$pageContent.innerHTML = document.querySelector('[data-partial="install"]').innerHTML
             })
     },
 }
