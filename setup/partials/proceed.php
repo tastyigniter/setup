@@ -29,16 +29,16 @@
     <div class="p-2">
         <a
             href="{{frontUrl}}"
-            class="border border-gray-800 transition duration-150 ease-in-out rounded hover:text-white focus:text-white font-medium px-6 py-2 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700"
+            class="border border-gray-800 transition duration-150 ease-in-out rounded-md hover:text-white focus:text-white font-medium px-6 py-2 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700"
         ><?= lang('text_goto_storefront'); ?></a>
         &nbsp;&nbsp;&nbsp;
         <a
             href="{{proceedUrl}}"
-            class="bg-orange-600 transition duration-150 ease-in-out rounded text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
+            class="bg-orange-600 transition duration-150 ease-in-out rounded-md text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
         ><?= lang('text_next_step'); ?> <?= lang('text_login_to_admin'); ?></a>
     </div>
 
-    <div class="bg-white shadow-sm rounded text-red-900 p-4 mt-7">
+    <div class="bg-white shadow rounded-md text-red-900 p-4 mt-7">
         <h5 class="font-medium text-lg">SECURITY WARNING!</h5>
         <p>
             Delete the setup files to stop someone else from overwriting your site,

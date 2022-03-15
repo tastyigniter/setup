@@ -5,7 +5,7 @@
 </p>
 
 <textarea
-    class="form-textarea w-full mb-3 rounded bg-white border-gray-200 text-gray-500"
+    class="form-textarea w-full mb-3 rounded-md bg-white border-gray-200 text-gray-500"
     rows="12"
     readonly
 ><?= file_get_contents(BASEPATH.'/LICENSE.txt'); ?></textarea>
@@ -13,7 +13,7 @@
 <div class="">
     <button
         type="button"
-        class="w-full bg-orange-600 transition duration-150 ease-in-out rounded text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
+        class="w-full bg-orange-600 transition duration-150 ease-in-out rounded-md text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
         data-install-control="accept-license"
     ><?= lang('button_accept') ?></button>
 </div>

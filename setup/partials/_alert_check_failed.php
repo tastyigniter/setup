@@ -1,4 +1,4 @@
-<div class="bg-white p-3 rounded-lg shadow-sm animated pulse">
+<div class="bg-white p-3 rounded-md shadow animated pulse">
     <div class="flex items-center">
         <div class="grow pl-2 pr-sm-3">
             <h4 class="text-red-700 text-xl font-medium mb-3">System Requirements Check Failed</h4>
@@ -20,10 +20,10 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-end mt-4">
+<div class="mt-4">
     <button
         type="submit"
-        class="w-full bg-orange-600 transition duration-150 ease-in-out rounded text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
+        class="w-full bg-orange-600 transition duration-150 ease-in-out rounded-md text-white font-medium px-6 py-2 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600"
         data-install-control="retry-check"
     >Retry Check</button>
 </div>

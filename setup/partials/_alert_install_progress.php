@@ -1,4 +1,4 @@
-<div class="shadow-sm border rounded bg-white text-center p-4 install-progress">
+<div class="shadow border rounded-md bg-white text-center p-4 install-progress">
     <div class="py-7">
         <span class="flex h-14 w-14 relative mx-auto">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>

@@ -45,7 +45,7 @@ $definitions = [
     <div class="flex flex-col">
         <?php foreach ($definitions as $code => $requirement) { ?>
             <div
-                class="p-3 bg-white rounded-lg border border-gray-200 shadow-sm mb-2 opacity-25 animated"
+                class="p-3 bg-white rounded-md border border-gray-200 shadow mb-2 opacity-25 animated"
                 data-requirement="<?= $code; ?>"
                 data-label="<?= lang($requirement['label']); ?>"
                 data-hint="<?= lang($requirement['hint']); ?>"

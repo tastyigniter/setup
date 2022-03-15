@@ -1,4 +1,4 @@
-<div class="bg-white rounded shadow-sm text-center p-4 install-failed">
+<div class="bg-white rounded-md shadow text-center p-4 install-failed">
     <div class="mt-4">
         <svg
             xmlns="http://www.w3.org/2000/svg"
