@@ -31,18 +31,6 @@
                     <input type="hidden" id="current-step" value="<?= $page->currentStep ?>">
                     <input type="hidden" name="requirement">
 
-                    <div
-                        id="page-modal"
-                        class="modal"
-                        tabindex="-1"
-                        role="dialog"
-                        data-html="modal">
-                    </div>
-
-                    <div id="progress-box" class="card-footer d-none" style="display: none;">
-                        <h4 class="message"></h4>
-                    </div>
-
                     <div id="flash-message" class="fixed top-9 right-6"></div>
                 </form>
             </div>
