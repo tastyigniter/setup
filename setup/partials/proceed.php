@@ -1,6 +1,6 @@
 <div class="text-center">
     <h1 class="text-3xl font-medium mb-3">&#127881;&nbsp;Yippee!</h1>
-    <p class="text-gray-500 mb-4">That's setup all done.</p>
+    <p class="text-gray-500 mb-5">That's setup all done.</p>
 
     <div class="py-5">
         <div class="py-3">

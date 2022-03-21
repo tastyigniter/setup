@@ -2,7 +2,7 @@
 $db = $setup->getDatabaseDetails();
 ?>
 <h1 class="text-3xl font-medium mb-3"><?= lang('text_database_heading'); ?></h1>
-<p class="text-gray-500 mb-4"><?= lang('text_database_sub_heading'); ?></p>
+<p class="text-gray-500 mb-5"><?= lang('text_database_sub_heading'); ?></p>
 
 <input type="hidden" name="disableLog" value="1">
 <div class="grid gap-4 grid-cols-2 mb-3">

@@ -39,7 +39,7 @@ $definitions = [
 ];
 ?>
 <h2 class="text-3xl font-medium mb-3"><?= lang('text_requirement_heading'); ?></h2>
-<p class="text-gray-500 mb-4"><?= lang('text_requirement_sub_heading'); ?></p>
+<p class="text-gray-500 mb-5"><?= lang('text_requirement_sub_heading'); ?></p>
 
 <div id="requirements">
     <div class="flex flex-col">

@@ -2,7 +2,7 @@
 $settings = $setup->getSettingsDetails();
 ?>
 <h1 class="text-3xl font-medium mb-3"><?= lang('text_settings_heading'); ?></h1>
-<p class="text-gray-500 mb-4"><?= lang('text_settings_sub_heading'); ?></p>
+<p class="text-gray-500 mb-5"><?= lang('text_settings_sub_heading'); ?></p>
 
 <div class="grid gap-4 grid-cols-2">
     <div>

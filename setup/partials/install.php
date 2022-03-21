@@ -1,5 +1,5 @@
 <h1 class="text-3xl font-medium mb-3"><?= lang('text_complete_heading'); ?></h1>
-<p class="text-gray-500 mb-4"><?= lang('text_complete_sub_heading'); ?></p>
+<p class="text-gray-500 mb-5"><?= lang('text_complete_sub_heading'); ?></p>
 
 <div data-html="install-type">
     <div class="grid md:grid-cols-2 gap-4 text-center">

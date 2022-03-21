@@ -1,5 +1,5 @@
 <h1 class="text-3xl font-medium mb-3"><?= lang('text_license_sub_heading'); ?></h1>
-<p class="text-gray-500 mb-4">
+<p class="text-gray-500 mb-5">
     By proceeding with this installation you agree to the terms of
     TastyIgniter End User Licence Agreement (EULA)
 </p>
