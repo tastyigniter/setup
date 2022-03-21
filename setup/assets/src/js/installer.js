@@ -152,7 +152,12 @@ window.Installer = {
 
         postData.append('handler', handler)
         for (const key in data) {
-            postData.set(key, data[key])
+            if (typeof data[key] === 'object') {
+                postData.set(key, JSON.stringify(data[key]))
+            }
+            else {
+                postData.set(key, data[key])
+            }
         }
 
         self.disableSubmitButton(true)
@@ -258,6 +263,7 @@ window.Installer = {
                         },
                         beforeSendMessage = Mustache.render(step.msg, item)
 
+                    console.log(postData)
                     $progressMessage.textContent = beforeSendMessage
 
                     return self
@@ -387,7 +393,7 @@ window.Installer = {
     processInstall($btn, control) {
         var self = this,
             installData = {
-                themeCode: $btn.dataset.themeCode,
+                themeCode: typeof $btn.dataset.themeCode !== 'undefined' ? $btn.dataset.themeCode : '',
                 process: 'apply',
                 disableLog: true
             }

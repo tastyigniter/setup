@@ -62,7 +62,7 @@ $partialList = [
     'danger' => ['background' => 'bg-red-600', 'text' => 'text-red-600'],
 ] as $type => $options) { ?>
     <script type="text/template" data-partial="alert-<?php echo $type ?>">
-        <div class="inline-flex items-center <?php echo $options['text'] ?> bg-white leading-none rounded-full p-3 shadow-xl mb-3">
+        <div class="inline-flex items-center <?php echo $options['text'] ?> bg-white leading-none rounded-full p-3 shadow-xl mb-3 w-96">
             <span class="inline-flex <?php echo $options['background'] ?> text-white rounded-full h-6 px-3 justify-center items-center"></span>
             <span class="inline-flex px-2">{{message}}</span>
         </div>
