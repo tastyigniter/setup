@@ -10,7 +10,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title><?= sprintf(lang('text_title'), lang('text_installation')); ?></title>
     <link type="image/png" rel="shortcut icon" href="setup/assets/images/favicon.svg">
-    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Barlow:200,200i,400,400i,500,500i,600,600i,700,700i|Droid+Sans+Mono">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="setup/assets/css/app.css">
 </head>
 <body class="flex h-full bg-gray-100 leading-6 tracking-wide">

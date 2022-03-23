@@ -38,7 +38,7 @@ module.exports = {
             center: true,
         },
         fontFamily: {
-            sans: ['Barlow', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
             serif: ['Droid Sans Mono', 'serif'],
         },
         ringColor: ({theme}) => ({
