@@ -1,7 +1,3 @@
-// window.$ = window.jQuery = require('jquery');
-// window.Popper = require('popper.js/dist/umd/popper');
-// require('bootstrap');
-
 import Alpine from 'alpinejs'
 import Swal from 'sweetalert2/dist/sweetalert2.js'
 
