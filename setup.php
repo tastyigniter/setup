@@ -1,36 +1,44 @@
 <?php include_once 'setup/bootstrap.php';
 
 ?><!DOCTYPE html>
-<html>
+<html
+    lang="en"
+    x-data="window.Installer"
+    class="h-full"
+>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title><?= sprintf(lang('text_title'), lang('text_installation')); ?></title>
-    <link type="image/png" rel="shortcut icon" href="https://d980sf4vy2c60.cloudfront.net/web/icons/favicon.png">
+    <link type="image/png" rel="shortcut icon" href="setup/assets/images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="setup/assets/css/app.css">
 </head>
-<body class="">
-<main id="page" class="setup-page">
-    <?php include_once PARTIALPATH.'_floating_logo.php'; ?>
-    <form id="setup-form" accept-charset="utf-8" method="POST" role="form">
-        <div data-html="content"></div>
+<body class="flex h-full bg-gray-100 leading-6 tracking-wide">
+<div class="container mt-24">
+    <main id="page" class="px-3 md:w-3/4 mx-auto">
+        <div class="flex flex-row">
+            <div :class="{'hidden': hideSidebar}" class="hidden pr-4 basis-1/4">
+                <?php include_once PARTIALPATH.'_floating_logo.php'; ?>
+                <?php include_once PARTIALPATH.'_wizard.php'; ?>
+            </div>
+            <div :class="{'basis-full': hideSidebar, 'basis-3/4': !hideSidebar}">
+                <form @submit.prevent="submitForm" id="setup-form" accept-charset="utf-8" method="POST" role="form">
+                    <div
+                        class="text-gray-600 pb-7"
+                        data-html="content"
+                    ></div>
 
-        <input type="hidden" id="current-step" value="<?= $page->currentStep ?>">
+                    <input type="hidden" id="current-step" value="<?= $page->currentStep ?>">
+                    <input type="hidden" name="requirement">
 
-        <div
-            id="page-modal"
-            class="modal"
-            tabindex="-1"
-            role="dialog"
-            data-html="modal">
+                    <div id="flash-message" class="fixed top-9 right-6"></div>
+                </form>
+            </div>
         </div>
-
-        <div id="progress-box" class="card-footer d-none" style="display: none;">
-            <h4 class="message"></h4>
-        </div>
-
-        <div id="flash-message"></div>
-    </form>
-</main>
+    </main>
+</div>
 
 <?php
 $partialList = [
@@ -50,24 +58,24 @@ $partialList = [
 ];
 ?>
 
+<?php foreach ([
+    'success' => ['background' => 'bg-emerald-600', 'text' => 'text-emerald-600'],
+    'warning' => ['background' => 'bg-amber-600', 'text' => 'text-amber-600'],
+    'danger' => ['background' => 'bg-red-600', 'text' => 'text-red-600'],
+] as $type => $options) { ?>
+    <script type="text/template" data-partial="alert-<?php echo $type ?>">
+        <div class="inline-flex items-center <?php echo $options['text'] ?> bg-white leading-none rounded-full p-3 shadow-xl mb-3 w-96">
+            <span class="inline-flex <?php echo $options['background'] ?> text-white rounded-full h-6 px-3 justify-center items-center"></span>
+            <span class="inline-flex px-2">{{message}}</span>
+        </div>
+    </script>
+<?php } ?>
 <?php foreach ($partialList as $partial) { ?>
     <script type="text/template" data-partial="<?= $partial ?>">
         <?php include PARTIALPATH.$partial.'.php'; ?>
     </script>
 <?php } ?>
 
-<script src="https://tastyigniter.com/assets/ui/js/global.js"></script>
 <script src="setup/assets/js/app.js"></script>
-<script type="text/javascript">
-    Installer.Steps.start.view = "[data-partial=\"start\"]"
-    Installer.Steps.license.view = "[data-partial=\"license\"]"
-    Installer.Steps.requirements.view = "[data-partial=\"requirements\"]"
-    Installer.Steps.database.view = "[data-partial=\"database\"]"
-    Installer.Steps.settings.view = "[data-partial=\"settings\"]"
-    Installer.Steps.install.view = "[data-partial=\"install\"]"
-    Installer.Steps.proceed.view = "[data-partial=\"proceed\"]"
-
-    Installer.init()
-</script>
 </body>
 </html>

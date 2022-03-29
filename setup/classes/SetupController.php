@@ -96,8 +96,11 @@ class SetupController
                 $result = $this->checkLiveConnection();
                 break;
             case 'writable':
+                @unlink($this->tempDirectory.'/test_writable');
                 @rmdir($this->tempDirectory);
-                $result = @mkdir($this->tempDirectory, 0777, TRUE);
+                @mkdir($this->tempDirectory, 0777, TRUE);
+                $result = @touch($this->tempDirectory.'/test_writable');
+                @unlink($this->tempDirectory.'/test_writable');
                 @rmdir($this->tempDirectory);
 
                 break;
@@ -203,7 +206,7 @@ class SetupController
         $this->writeLog('Foundation setup: %s', $installStep);
         $result = FALSE;
 
-        $item = $this->post('item');
+        $item = $this->postJson('item');
 
         $params = [];
         if ($this->post('step') != 'complete' AND isset($item['code'])) {
@@ -816,6 +819,11 @@ class SetupController
         }
 
         return $default;
+    }
+
+    public function postJson($key = null, $default = '{}')
+    {
+        return json_decode($this->post($key, $default), TRUE);
     }
 
     protected function session($key, $default = null)

@@ -2,20 +2,27 @@
   "name": "tastyigniter-setup",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --config=node_modules/laravel-mix/setup/webpack.config.js",
-    "watch": "npm run dev -- --watch",
-    "prod": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --progress --config=node_modules/laravel-mix/setup/webpack.config.js"
+    "dev": "mix",
+    "watch": "mix watch",
+    "watch-poll": "mix watch -- --watch-options-poll=1000",
+    "hot": "mix watch --hot",
+    "prod": "mix --production"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free-webfonts": "^1.0.6",
-    "@popperjs/core": "^2.9.1",
-    "animate.css": "^3.6.1",
-    "bootstrap": "^5.0.0-beta3",
+    "alpinejs": "^3.9.1",
+    "animate.css": "^3.7.2",
+    "mustache": "^4.2.0",
+    "sweetalert2": "^11.4.4",
+    "tailwindcss": "^3.0.23"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.0",
+    "autoprefixer": "^10.4.2",
     "cross-env": "^5.0.1",
-    "jquery": "^3.4.0",
     "laravel-mix": "^6.0.13",
     "node-sass": "^4.14.1",
-    "postcss": "^8.3.2",
+    "postcss": "^8.4.8",
+    "postcss-import": "^14.0.2",
     "sass": "^1.32.8",
     "sass-loader": "^10.1.1"
   }
