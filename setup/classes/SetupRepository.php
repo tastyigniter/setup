@@ -28,7 +28,7 @@ class SetupRepository
         if (!is_file($this->configPath))
             touch($this->configPath);
 
-        $this->items = @json_decode($this->contents(), TRUE);
+        $this->items = @json_decode($this->contents(), true);
 
         return $this;
     }

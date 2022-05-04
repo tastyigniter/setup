@@ -66,7 +66,7 @@ class SetupController
     {
         $code = $this->post('code');
         $this->writeLog('System check: %s', $code);
-        $result = FALSE;
+        $result = false;
         switch ($code) {
             case 'php':
                 $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
@@ -97,7 +97,7 @@ class SetupController
                 break;
             case 'writable':
                 @rmdir($this->tempDirectory);
-                $result = @mkdir($this->tempDirectory, 0777, TRUE);
+                $result = @mkdir($this->tempDirectory, 0777, true);
                 @rmdir($this->tempDirectory);
 
                 break;
@@ -201,7 +201,7 @@ class SetupController
     {
         $installStep = $this->post('process');
         $this->writeLog('Foundation setup: %s', $installStep);
-        $result = FALSE;
+        $result = false;
 
         $item = $this->post('item');
 
@@ -223,21 +223,21 @@ class SetupController
             case 'downloadTheme':
             case 'downloadCore':
                 if ($this->downloadFile($item['code'], $item['hash'], $params))
-                    $result = TRUE;
+                    $result = true;
                 break;
             case 'extractExtension':
                 if ($this->extractFile($item['code'], 'extensions/'))
-                    $result = TRUE;
+                    $result = true;
                 break;
             case 'extractTheme':
                 if ($this->extractFile($item['code'], 'themes/'))
-                    $result = TRUE;
+                    $result = true;
 
                 $this->repository->set('activeTheme', $item['code']);
                 break;
             case 'extractCore':
                 if ($this->extractFile($item['code']))
-                    $result = TRUE;
+                    $result = true;
 
                 $this->repository->set('core', $item);
                 break;
@@ -247,7 +247,7 @@ class SetupController
 
                 $this->rewriteEnvFile();
 
-                $result = TRUE;
+                $result = true;
                 break;
             case 'finishInstall':
                 // Run migration
@@ -280,13 +280,13 @@ class SetupController
                 if (!preg_match('/^on[A-Z]{1}[\w+]*$/', $handler))
                     throw new SetupException(sprintf('Invalid handler: %s', $this->e($handler)));
                 if (method_exists($this, $handler) && ($result = $this->$handler()) !== null) {
-                    $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, TRUE));
+                    $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, true));
                     header('Content-Type: application/json');
                     exit(json_encode($result));
                 }
             }
             catch (Exception $ex) {
-                header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', TRUE, 500);
+                header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', true, 500);
                 $this->writeLog('Handler error (%s): %s', $handler, $ex->getMessage());
                 $this->writeLog(['Trace log:', '%s'], $ex->getTraceAsString());
                 exit($ex->getMessage());
@@ -302,23 +302,23 @@ class SetupController
     public function checkDatabase()
     {
         if (!$config = $this->repository->get('database', []))
-            return FALSE;
+            return false;
 
         // Make sure the database name is specified
         if (!isset($config['host']))
-            return FALSE;
+            return false;
 
         try {
             $this->testDbConnection($config);
         }
         catch (Exception $ex) {
-            return FALSE;
+            return false;
         }
 
         // At this point,
         // its clear database configuration is set
         // and connection successful
-        return TRUE;
+        return true;
     }
 
     protected function testDbConnection($config = [])
@@ -373,17 +373,17 @@ class SetupController
      */
     protected function hasDbInstalledSettings($db)
     {
-        $this->repository->set('settingsInstalled', FALSE);
+        $this->repository->set('settingsInstalled', false);
 
         // Nothing to import if database has no existing tables
         if ($db->isFreshlyInstalled())
-            return FALSE;
+            return false;
 
         // Check whether to import existing database tables
         if ($db->hasPreviouslyInstalledSettings()) {
-            $this->repository->set('settingsInstalled', TRUE);
+            $this->repository->set('settingsInstalled', true);
 
-            return TRUE;
+            return true;
         }
 
         throw new SetupException(sprintf(
@@ -478,7 +478,7 @@ class SetupController
 
         $this->addSystemParameters();
 
-        if ($this->repository->get('settingsInstalled', FALSE) === TRUE)
+        if ($this->repository->get('settingsInstalled', false) === true)
             return;
 
         // Save the site configuration to the settings table
@@ -489,9 +489,9 @@ class SetupController
     {
         // Abort: a super admin user already exists
         if (Users_model::where('super_user', 1)->count())
-            return TRUE;
+            return true;
 
-        if ($this->repository->get('settingsInstalled') === TRUE)
+        if ($this->repository->get('settingsInstalled') === true)
             return optional(Users_model::first())->update(['super_user' => 1]);
 
         $config = $this->repository->get('settings');
@@ -504,7 +504,7 @@ class SetupController
         $staff->staff_name = $config['staff_name'];
         $staff->staff_role_id = Staff_roles_model::first()->staff_role_id;
         $staff->language_id = Languages_model::first()->language_id;
-        $staff->staff_status = TRUE;
+        $staff->staff_status = true;
         $staff->save();
 
         $staff->groups()->attach(Staff_groups_model::first()->staff_group_id);
@@ -516,8 +516,8 @@ class SetupController
 
         $user->staff_id = $staff->staff_id;
         $user->password = $config['password'];
-        $user->super_user = TRUE;
-        $user->is_activated = TRUE;
+        $user->super_user = true;
+        $user->is_activated = true;
         $user->date_activated = Carbon::now();
 
         return $user->save();
@@ -616,22 +616,22 @@ class SetupController
         if ($directory)
             $extractTo .= '/'.$directory.str_replace('.', '/', $fileCode);
 
-        if (!file_exists($extractTo) && !mkdir($extractTo, 0777, TRUE) && !is_dir($extractTo)) {
+        if (!file_exists($extractTo) && !mkdir($extractTo, 0777, true) && !is_dir($extractTo)) {
             throw new RuntimeException(sprintf('Directory "%s" was not created', $extractTo));
         }
 
         $zip = new ZipArchive();
-        if ($zip->open($filePath) === TRUE) {
+        if ($zip->open($filePath) === true) {
             $zip->extractTo($extractTo);
             $zip->close();
             @unlink($filePath);
 
-            return TRUE;
+            return true;
         }
 
         $this->writeLog('Unable to open [%s] archive file %s', $fileCode, basename($filePath));
 
-        return FALSE;
+        return false;
     }
 
     protected function rewriteEnvFile()
@@ -788,7 +788,7 @@ class SetupController
 
     protected function e($value)
     {
-        return htmlentities($value, ENT_QUOTES, 'UTF-8', FALSE);
+        return htmlentities($value, ENT_QUOTES, 'UTF-8', false);
     }
 
     protected function server($key, $default = null)
@@ -861,7 +861,7 @@ class SetupController
                 $result = '';
             }
 
-            $this->writeLog('Request information: %s', print_r(curl_getinfo($curl), TRUE));
+            $this->writeLog('Request information: %s', print_r(curl_getinfo($curl), true));
             curl_close($curl);
         }
         catch (Exception $ex) {
@@ -872,7 +872,7 @@ class SetupController
             throw new SetupException('Server responded with error: '.$error);
 
         try {
-            $_result = @json_decode($result, TRUE);
+            $_result = @json_decode($result, true);
         }
         catch (Exception $ex) {
         }
@@ -885,7 +885,7 @@ class SetupController
 
         if (isset($_result['message']) && !in_array($httpCode, [200, 201])) {
             if (isset($_result['errors']))
-                $this->writeLog('Server validation errors: '.print_r($_result['errors'], TRUE));
+                $this->writeLog('Server validation errors: '.print_r($_result['errors'], true));
 
             throw new SetupException($_result['message']);
         }
@@ -895,7 +895,7 @@ class SetupController
 
     protected function requestRemoteFile($uri, array $params, $code, $expectedHash)
     {
-        if (!mkdir($this->tempDirectory, 0777, TRUE) && !is_dir($this->tempDirectory))
+        if (!mkdir($this->tempDirectory, 0777, true) && !is_dir($this->tempDirectory))
             throw new SetupException(sprintf('Failed to create temp directory: %s', $this->tempDirectory));
 
         try {
@@ -928,7 +928,7 @@ class SetupController
 
         $this->writeLog('Downloaded file (%s) to %s', $code, $filePath);
 
-        return TRUE;
+        return true;
     }
 
     protected function prepareRequest($uri, $params = [])
@@ -946,12 +946,12 @@ class SetupController
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, static::TI_ENDPOINT.'/'.$uri);
         curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
 
         // Used to skip SSL Check on Wamp Server which causes the Live Status Check to fail
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
         if (strlen($siteKey = $this->repository->get('site_key'))) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
@@ -1013,7 +1013,7 @@ class SetupController
 
         $postData = $_POST;
         if (array_key_exists('disableLog', $postData))
-            $postData = ['disableLog' => TRUE];
+            $postData = ['disableLog' => true];
 
         // Filter sensitive data fields
         $fieldsToErase = [
@@ -1029,8 +1029,8 @@ class SetupController
             if (isset($postData[$field])) $postData[$field] = '*******';
         }
 
-        $this->writeLog('.============================ POST REQUEST ==========================.', ['hideTime' => TRUE]);
-        $this->writeLog('Postback payload: %s', print_r($postData, TRUE));
+        $this->writeLog('.============================ POST REQUEST ==========================.', ['hideTime' => true]);
+        $this->writeLog('Postback payload: %s', print_r($postData, true));
     }
 
     protected function checkLiveConnection()
