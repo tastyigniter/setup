@@ -75,8 +75,8 @@ class SetupPDO extends PDO
     {
         $installedVersion = $this->query('select version()')->fetchColumn();
 
-        if (!(strpos($installedVersion, 'MariaDB') === FALSE)) {
-            return TRUE;
+        if (!(strpos($installedVersion, 'MariaDB') === false)) {
+            return true;
         }
 
         $installedVersion = substr($installedVersion, 0, 6);
