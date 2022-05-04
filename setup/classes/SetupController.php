@@ -52,7 +52,7 @@ class SetupController
             $this->page = new stdClass;
 
         $this->page->currentStep = 'start';
-        if (isset($_GET['step']) AND strlen($_GET['step']) AND in_array($_GET['step'], ['requirements', 'database', 'settings']))
+        if (isset($_GET['step']) && strlen($_GET['step']) && in_array($_GET['step'], ['requirements', 'database', 'settings']))
             $this->page->currentStep = $_GET['step'];
 
         return $this->page;
@@ -72,7 +72,7 @@ class SetupController
                 $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
                 break;
             case 'pdo':
-                $result = (extension_loaded('pdo') AND extension_loaded('pdo_mysql'));
+                $result = extension_loaded('pdo') && extension_loaded('pdo_mysql');
                 break;
             case 'mbstring':
                 $result = extension_loaded('mbstring');
@@ -84,7 +84,7 @@ class SetupController
                 $result = extension_loaded('gd');
                 break;
             case 'curl':
-                $result = function_exists('curl_init') AND defined('CURLOPT_FOLLOWLOCATION');
+                $result = function_exists('curl_init') && defined('CURLOPT_FOLLOWLOCATION');
                 break;
             case 'zip':
                 $result = class_exists('ZipArchive');
@@ -137,9 +137,9 @@ class SetupController
 
         $db = $this->testDbConnection($config);
 
-        $step = ($db AND $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
+        $step = ($db && $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
 
-        if ($step == 'install' AND $this->post('upgrade') != 1) {
+        if ($step == 'install' && $this->post('upgrade') != 1) {
             return ['modal' => '_popup_upgrade'];
         }
 
@@ -171,7 +171,7 @@ class SetupController
             throw new SetupException('Please specify the administrator username');
 
         $password = $this->post('password');
-        if (!strlen($password) OR strlen($password) < 6)
+        if (!strlen($password) || strlen($password) < 6)
             throw new SetupException('Please specify the administrator password, at least 6 characters');
 
         if (!strlen($this->post('confirm_password')))
@@ -206,7 +206,7 @@ class SetupController
         $item = $this->post('item');
 
         $params = [];
-        if ($this->post('step') != 'complete' AND isset($item['code'])) {
+        if ($this->post('step') != 'complete' && isset($item['code'])) {
             $params = [
                 'name' => $item['code'],
                 'type' => $item['type'],
@@ -279,7 +279,7 @@ class SetupController
             try {
                 if (!preg_match('/^on[A-Z]{1}[\w+]*$/', $handler))
                     throw new SetupException(sprintf('Invalid handler: %s', $this->e($handler)));
-                if (method_exists($this, $handler) AND ($result = $this->$handler()) !== null) {
+                if (method_exists($this, $handler) && ($result = $this->$handler()) !== null) {
                     $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, TRUE));
                     header('Content-Type: application/json');
                     exit(json_encode($result));
@@ -340,27 +340,27 @@ class SetupController
     {
         $result = [];
         $result['host'] = '127.0.0.1';
-        if (isset($config['host']) AND is_string($config['host']))
+        if (isset($config['host']) && is_string($config['host']))
             $result['host'] = trim($config['host']);
 
         $result['port'] = 3306;
-        if (isset($config['port']) AND is_string($config['port']))
+        if (isset($config['port']) && is_string($config['port']))
             $result['port'] = trim($config['port']);
 
         $result['database'] = '';
-        if (isset($config['database']) AND is_string($config['database']))
+        if (isset($config['database']) && is_string($config['database']))
             $result['database'] = trim($config['database']);
 
         $result['username'] = '';
-        if (isset($config['username']) AND is_string($config['username']))
+        if (isset($config['username']) && is_string($config['username']))
             $result['username'] = trim($config['username']);
 
         $result['password'] = '';
-        if (isset($config['password']) AND is_string($config['password']))
+        if (isset($config['password']) && is_string($config['password']))
             $result['password'] = $config['password'];
 
         $result['prefix'] = 'ti_';
-        if (isset($config['prefix']) AND is_string($config['prefix']))
+        if (isset($config['prefix']) && is_string($config['prefix']))
             $result['prefix'] = trim($config['prefix']);
 
         return $result;
@@ -616,7 +616,7 @@ class SetupController
         if ($directory)
             $extractTo .= '/'.$directory.str_replace('.', '/', $fileCode);
 
-        if (!file_exists($extractTo) AND !mkdir($extractTo, 0777, TRUE) AND !is_dir($extractTo)) {
+        if (!file_exists($extractTo) && !mkdir($extractTo, 0777, TRUE) && !is_dir($extractTo)) {
             throw new RuntimeException(sprintf('Directory "%s" was not created', $extractTo));
         }
 
@@ -758,11 +758,11 @@ class SetupController
     protected function confirmRequirements()
     {
         $licenseAgreed = $this->repository->get('license_agreed');
-        if (!strlen($licenseAgreed) OR $licenseAgreed != 'accepted')
+        if (!strlen($licenseAgreed) || $licenseAgreed != 'accepted')
             throw new SetupException('Please accept the TastyIgniter license before proceeding.');
 
         $requirement = $this->repository->get('requirement');
-        if (!strlen($requirement) OR $requirement != 'complete')
+        if (!strlen($requirement) || $requirement != 'complete')
             throw new SetupException('Please make sure your system meets all requirements');
     }
 
@@ -833,7 +833,7 @@ class SetupController
     protected function getBaseUrl()
     {
         if (isset($_SERVER['HTTP_HOST'])) {
-            $baseUrl = (!empty($_SERVER['HTTPS']) AND strtolower($_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
+            $baseUrl = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
             $baseUrl .= '://'.$_SERVER['HTTP_HOST'];
             $baseUrl .= str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
         }
@@ -883,7 +883,7 @@ class SetupController
             throw new SetupException('Server returned an invalid response.');
         }
 
-        if (isset($_result['message']) AND !in_array($httpCode, [200, 201])) {
+        if (isset($_result['message']) && !in_array($httpCode, [200, 201])) {
             if (isset($_result['errors']))
                 $this->writeLog('Server validation errors: '.print_r($_result['errors'], TRUE));
 
@@ -895,7 +895,7 @@ class SetupController
 
     protected function requestRemoteFile($uri, array $params, $code, $expectedHash)
     {
-        if (!mkdir($this->tempDirectory, 0777, TRUE) AND !is_dir($this->tempDirectory))
+        if (!mkdir($this->tempDirectory, 0777, TRUE) && !is_dir($this->tempDirectory))
             throw new SetupException(sprintf('Failed to create temp directory: %s', $this->tempDirectory));
 
         try {
@@ -940,7 +940,7 @@ class SetupController
             'version' => $this->repository->get('ti_version'),
         ]));
 
-        if (isset($_GET['edge']) AND $_GET['edge'] == 1)
+        if (isset($_GET['edge']) && $_GET['edge'] == 1)
             $params['edge'] = 1;
 
         $curl = curl_init();
@@ -971,8 +971,8 @@ class SetupController
         ]);
 
         if (!isset($theme['data']['require']['data'])
-            OR !is_array($theme['data']['require']['data'])
-            OR !count($theme['data']['require']['data'])
+            || !is_array($theme['data']['require']['data'])
+            || !count($theme['data']['require']['data'])
         ) return [];
 
         return $theme['data']['require']['data'];
@@ -1009,7 +1009,7 @@ class SetupController
 
     protected function writePostToLog()
     {
-        if (!isset($_POST) OR !count($_POST)) return;
+        if (!isset($_POST) || !count($_POST)) return;
 
         $postData = $_POST;
         if (array_key_exists('disableLog', $postData))
