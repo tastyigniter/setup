@@ -56,7 +56,6 @@ $partialList = [
     </script>
 <?php } ?>
 
-<script src="https://tastyigniter.com/assets/ui/js/global.js"></script>
 <script src="setup/assets/js/app.js"></script>
 <script type="text/javascript">
     Installer.Steps.start.view = "[data-partial=\"start\"]"

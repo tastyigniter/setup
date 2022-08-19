@@ -353,7 +353,8 @@ var Installer = {
             Installer.checkRequirements()
         }
 
-        Installer.$pageModal.modal('hide')
+        new bootstrap.Modal(Installer.$pageModal, {hide: true})
+        // Installer.$pageModal.modal('hide')
     },
 
     flashMessage: function (type, message) {
@@ -388,9 +389,10 @@ var Installer = {
         }
 
         if (showModal) {
-            var modalTemplate = $('[data-partial="' + showModal + '"]').clone().html();
+            var modalTemplate = $('[data-partial="'+showModal+'"]').clone().html();
             Installer.$pageModal.html(Mustache.render(modalTemplate))
-            Installer.$pageModal.modal()
+            // Installer.$pageModal.modal()
+            new bootstrap.Modal(Installer.$pageModal)
         }
 
         switch (nextStep) {

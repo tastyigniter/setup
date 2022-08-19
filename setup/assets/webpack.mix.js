@@ -27,9 +27,12 @@ mix.sass('src/scss/app.scss', 'css/');
 //
 mix.scripts(
     [
+        'node_modules/jquery/dist/jquery.min.js',
+        'node_modules/bootstrap/dist/js/bootstrap.min.js',
         'node_modules/sweetalert/dist/sweetalert.min.js',
         'src/js/vendor/waterfall.min.js',
         'src/js/mustache.js',
+        'src/js/setup.js',
         'src/js/installer.js',
     ],
     'js/app.js')
