@@ -24,6 +24,19 @@
             </div>
         </div>
     </div>
+
+    <div data-html="existing-database" class="row d-none">
+        <div class="col-12">
+            <div class="alert alert-info mt-5" role="alert">
+                <h4 class="alert-heading">Existing database records found!</h4>
+                <hr>
+                <p class="mb-0">
+                    An older version of TastyIgniter was found in the specified database. <br>
+                    By proceeding, your existing database will be updated.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row" data-html="themes">

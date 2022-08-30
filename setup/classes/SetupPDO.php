@@ -65,10 +65,7 @@ class SetupPDO extends PDO
         $tableName = sprintf('%s%s', $this->configPrefix, 'settings');
         $fetch = $this->query("select * from {$tableName} where item = ".$this->quote('ti_version'), static::FETCH_ASSOC);
 
-        $settings = $fetch->fetch();
-        $version = $settings['value'] ?? null;
-
-        return 0 === strpos($version, '2.1.');
+        return $fetch->fetch() !== false;
     }
 
     public function compareInstalledVersion()

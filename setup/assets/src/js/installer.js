@@ -336,14 +336,6 @@ var Installer = {
         if (!pageData)
             pageData = {}
 
-        // if (pageData.title) {
-        //     Installer.$page.find("[data-html=\"title\"]").html(pageData.title)
-        // }
-        //
-        // if (pageData.subTitle) {
-        //     Installer.$page.find("[data-html=\"subTitle\"]").html(pageData.subTitle)
-        // }
-
         if (name) {
             var viewHtml = Mustache.render($(view).html(), $.extend(pageData, data, {}))
             Installer.$pageContent.html(viewHtml)
@@ -352,9 +344,6 @@ var Installer = {
         if (Installer.currentStep === 'requirements') {
             Installer.checkRequirements()
         }
-
-        new bootstrap.Modal(Installer.$pageModal, {hide: true})
-        // Installer.$pageModal.modal('hide')
     },
 
     flashMessage: function (type, message) {
@@ -381,18 +370,11 @@ var Installer = {
 
     processResponse: function (json) {
         var flashMessage = json.flash,
-            showModal = json.modal,
+            settingsInstalled = json.settingsInstalled,
             nextStep = json.step
 
         if (flashMessage) {
             Installer.flashMessage(flashMessage.type, flashMessage.message)
-        }
-
-        if (showModal) {
-            var modalTemplate = $('[data-partial="'+showModal+'"]').clone().html();
-            Installer.$pageModal.html(Mustache.render(modalTemplate))
-            // Installer.$pageModal.modal()
-            new bootstrap.Modal(Installer.$pageModal)
         }
 
         switch (nextStep) {
@@ -403,6 +385,10 @@ var Installer = {
             case 'install':
                 Installer.updateWizard(nextStep)
                 Installer.renderView(nextStep)
+
+                if (settingsInstalled)
+                    Installer.$pageContent.find('[data-html="existing-database"]').removeClass('d-none')
+
                 break
         }
     },

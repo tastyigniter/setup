@@ -139,16 +139,15 @@ class SetupController
 
         $step = ($db && $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
 
-        if ($step == 'install' && $this->post('upgrade') != 1) {
-            return ['modal' => '_popup_upgrade'];
-        }
-
         $this->repository->set('database', $config);
         $result = $this->repository->save();
 
         $this->writeLog('Database %s %s', $database, ($result ? '+OK' : '=FAIL'));
 
-        return $result ? ['step' => $step] : ['result' => $result];
+        return $result ? [
+            'step' => $step,
+            'settingsInstalled' => $this->repository->get('settingsInstalled', false),
+        ] : ['result' => $result];
     }
 
     public function onValidateSettings()
@@ -327,7 +326,7 @@ class SetupController
             $db = SetupPDO::makeFromConfig($config);
 
             if (!$db->compareInstalledVersion())
-                throw new SetupException('Connection failed: '.lang('text_mysql_version'));
+                throw new SetupException(lang('text_mysql_version'));
         }
         catch (PDOException $ex) {
             throw new SetupException('Connection failed: '.$ex->getMessage());
