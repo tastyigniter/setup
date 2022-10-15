@@ -170,8 +170,8 @@ class SetupController
             throw new SetupException('Please specify the administrator username');
 
         $password = $this->post('password');
-        if (!strlen($password) || strlen($password) < 6)
-            throw new SetupException('Please specify the administrator password, at least 6 characters');
+        if (!strlen($password) || strlen($password) < 6 || strlen($password) > 32)
+            throw new SetupException('Please specify the administrator password, at least 6 characters and not more than 32 characters.');
 
         if (!strlen($this->post('confirm_password')))
             throw new SetupException('Please confirm the administrator password');
