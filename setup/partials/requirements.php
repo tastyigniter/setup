@@ -1,36 +1,21 @@
 <?php
+
 $definitions = [
     'php' => [
         'label' => 'label_php_version',
         'hint' => 'text_php_version',
     ],
-    'pdo' => [
-        'label' => 'label_pdo',
-        'hint' => 'text_pdo_installed',
-    ],
-    'curl' => [
-        'label' => 'label_curl',
-        'hint' => 'text_curl_installed',
+    'php_extensions' => [
+        'label' => 'label_php_extensions',
+        'hint' => 'label_php_extensions',
     ],
     'connection' => [
         'label' => 'label_connection',
         'hint' => 'text_live_connection',
     ],
-    'mbstring' => [
-        'label' => 'label_mbstring',
-        'hint' => 'text_mbstring_installed',
-    ],
-    'ssl' => [
-        'label' => 'label_ssl',
-        'hint' => 'text_ssl_installed',
-    ],
-    'gd' => [
-        'label' => 'label_gd',
-        'hint' => 'text_gd_installed',
-    ],
-    'zip' => [
-        'label' => 'label_zip',
-        'hint' => 'text_zip_installed',
+    'uploads' => [
+        'label' => 'label_file_uploads',
+        'hint' => 'text_file_uploads_enabled',
     ],
     'writable' => [
         'label' => 'label_writable',

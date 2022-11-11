@@ -71,23 +71,8 @@ class SetupController
             case 'php':
                 $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
                 break;
-            case 'pdo':
-                $result = extension_loaded('pdo') && extension_loaded('pdo_mysql');
-                break;
-            case 'mbstring':
-                $result = extension_loaded('mbstring');
-                break;
-            case 'ssl':
-                $result = extension_loaded('openssl');
-                break;
-            case 'gd':
-                $result = extension_loaded('gd');
-                break;
-            case 'curl':
-                $result = function_exists('curl_init') && defined('CURLOPT_FOLLOWLOCATION');
-                break;
-            case 'zip':
-                $result = class_exists('ZipArchive');
+            case 'php_extensions':
+                $result = $this->checkPHPExtensions();
                 break;
             case 'uploads':
                 $result = ini_get('file_uploads');
@@ -179,7 +164,7 @@ class SetupController
         if ($this->post('confirm_password') != $password)
             throw new SetupException('Password does not match');
 
-        $this->repository->set('site_key', (string)$this->post('site_key'));
+        $this->repository->set('carte_key', (string)$this->post('carte_key'));
 
         $this->repository->set('settings', [
             'demo_data' => (int)$this->post('demo_data'),
@@ -218,21 +203,9 @@ class SetupController
             case 'apply':
                 $result = $this->applyInstall();
                 break;
-            case 'downloadExtension':
-            case 'downloadTheme':
             case 'downloadCore':
                 if ($this->downloadFile($item['code'], $item['hash'], $params))
                     $result = true;
-                break;
-            case 'extractExtension':
-                if ($this->extractFile($item['code'], 'extensions/'))
-                    $result = true;
-                break;
-            case 'extractTheme':
-                if ($this->extractFile($item['code'], 'themes/'))
-                    $result = true;
-
-                $this->repository->set('activeTheme', $item['code']);
                 break;
             case 'extractCore':
                 if ($this->extractFile($item['code']))
@@ -245,13 +218,19 @@ class SetupController
                 $this->moveExampleFile('env', 'example', null);
 
                 $this->rewriteEnvFile();
+                $this->setCarteDetails();
 
                 $result = true;
+                break;
+            case 'composerUpdate':
+                $result = $this->runComposerUpdate();
+                break;
+            case 'composerInstall':
+                $result = $this->runComposerInstall();
                 break;
             case 'finishInstall':
                 // Run migration
                 $this->completeSetup();
-                $this->completeInstall();
                 $this->cleanUpAfterInstall();
 
                 $this->moveExampleFile('htaccess', null, 'backup');
@@ -261,7 +240,7 @@ class SetupController
                 break;
         }
 
-        $status = $installStep == 'install' ? 'complete' : $installStep;
+        $status = $installStep == 'finishInstall' ? 'complete' : $installStep;
         $this->repository->set('install', $result ? $status : 'fail')->save();
 
         $this->writeLog('Foundation setup: %s %s', $installStep, ($result ? '+OK' : '=FAIL'));
@@ -292,6 +271,32 @@ class SetupController
             }
             exit;
         }
+    }
+
+    protected function checkPHPExtensions()
+    {
+        if (!(extension_loaded('pdo') && extension_loaded('pdo_mysql')))
+            return false;
+
+        if (!extension_loaded('mbstring'))
+            return false;
+
+        if (!extension_loaded('openssl'))
+            return false;
+
+        if (!extension_loaded('gd'))
+            return false;
+
+        if (!(function_exists('curl_init') && defined('CURLOPT_FOLLOWLOCATION')))
+            return false;
+
+        if (!class_exists('ZipArchive'))
+            return false;
+
+        if (!ini_get('file_uploads'))
+            return false;
+
+        return true;
     }
 
     //
@@ -406,35 +411,25 @@ class SetupController
 
     protected function processInstallItems()
     {
-        $params = $items = [];
+        $themeCode = $this->post('themeCode');
+        $this->repository->set('activeTheme', $themeCode);
 
-        if (!strlen($themeCode = $this->post('themeCode')))
-            return $params;
-
-        if ($dependencies = $this->fetchThemeDependencies($themeCode)) {
-            foreach ($dependencies as $dependency) {
-                $items[] = ['name' => $dependency['code'], 'type' => $dependency['type']];
-            }
-        }
-
-        $items[] = ['name' => $themeCode, 'type' => 'theme'];
-
-        $params['items'] = $items;
-
-        return $params;
+        return !strlen($themeCode) ? [] : [
+            'items' => ['name' => $themeCode, 'type' => 'theme'],
+        ];
     }
 
     protected function buildProcessSteps($response)
     {
         $processSteps = [];
 
-        foreach (['download', 'extract', 'config', 'install'] as $step) {
+        foreach (['download', 'extract', 'writeConfig', 'composerUpdate', 'composerInstall', 'finishInstall'] as $step) {
             $applySteps = [];
 
-            if (in_array($step, ['config', 'install'])) {
+            if (!in_array($step, ['download', 'extract'])) {
                 $processSteps[$step][] = [
                     'items' => $response['data'],
-                    'process' => $step == 'install' ? 'finishInstall' : 'writeConfig',
+                    'process' => $step,
                 ];
 
                 continue;
@@ -445,14 +440,6 @@ class SetupController
                     $applySteps[] = array_merge([
                         'action' => 'install',
                         'process' => "{$step}Core",
-                    ], $item);
-                }
-                else {
-                    $singularType = $item['type'];
-
-                    $applySteps[] = array_merge([
-                        'action' => 'install',
-                        'process' => $step.ucfirst($singularType),
                     ], $item);
                 }
             }
@@ -545,7 +532,7 @@ class SetupController
             'ti_setup' => 'installed',
             'ti_version' => array_get($core, 'version'),
             'sys_hash' => array_get($core, 'hash'),
-            'site_key' => $this->repository->get('site_key'),
+            'site_key' => $this->repository->get('carte_key'),
             'default_location_id' => Locations_model::first()->location_id,
         ]);
 
@@ -591,6 +578,43 @@ class SetupController
     //
     // File
     //
+
+    protected function runComposerUpdate()
+    {
+        $this->log('Updating package manager...');
+        $composer = \System\Classes\ComposerManager::instance();
+        $composer->setOutputBuffer();
+
+        try {
+            $composer->update(['composer/composer']);
+        }
+        catch (Exception $ex) {
+            $this->writeLog($composer->getOutputBuffer());
+        }
+    }
+
+    protected function runComposerInstall()
+    {
+        $composer = \System\Classes\ComposerManager::instance();
+        $composer->setOutputBuffer();
+
+        try {
+            $this->writeLog('Installing dependencies...');
+
+            $item = collect(array_get($this->post('item'), 'items', []))->firstWhere('type', 'theme');
+
+            if ($item && $package = array_get($item, 'package_name')) {
+                $composer->require([$package => $item['version']]);
+            }
+            else {
+                $composer->update();
+            }
+        }
+        catch (Exception $ex) {
+            $this->writeLog($composer->getOutputBuffer());
+            throw $ex;
+        }
+    }
 
     protected function getFilePath($fileCode)
     {
@@ -952,7 +976,7 @@ class SetupController
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
-        if (strlen($siteKey = $this->repository->get('site_key'))) {
+        if (strlen($siteKey = $this->repository->get('carte_key'))) {
             curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
         }
 
@@ -963,18 +987,13 @@ class SetupController
     {
         $theme = $this->requestRemoteData('item/detail', [
             'item' => [
-                'name' => $themeCode ?? 'tastyigniter-orange',
+                'name' => $themeCode,
                 'type' => 'theme',
             ],
             'include' => 'require',
         ]);
 
-        if (!isset($theme['data']['require']['data'])
-            || !is_array($theme['data']['require']['data'])
-            || !count($theme['data']['require']['data'])
-        ) return [];
-
-        return $theme['data']['require']['data'];
+        return $theme['data']['require']['data'] ?? [];
     }
 
     //

@@ -21,19 +21,15 @@ var Installer = {
             dataCache: {},
             handler: "onInstall",
             steps: {
-                download: {
-                    msg: "Downloading {{name}} {{type}}...",
-                    error: "Downloading {{name}} {{type}} failed. See setup log."
+                install: {
+                    msg: "Installing tastyigniter composer package...",
+                    error: "Installing tastyigniter composer package failed. See setup log."
                 },
-                extract: {
-                    msg: "Extracting {{name}} {{type}}...",
-                    error: "Extracting {{name}} {{type}} failed. See setup log."
-                },
-                config: {
+                writeConfig: {
                     msg: "Writing site configuration files...",
                     error: "Writing site configuration files failed. See setup log."
                 },
-                install: {
+                finishInstall: {
                     msg: "Finishing site setup...",
                     error: "Finishing site setup failed. See setup log."
                 }
@@ -174,16 +170,6 @@ var Installer = {
         $(Installer.options.currentStepSelector).val(step);
         $('body').attr('class', step);
         Installer.currentStep = step;
-        //
-        // for (var index in steps) {
-        //     var $step = Installer.$page.find('[data-wizard="' + steps[index] + '"]')
-        //     $step.removeClass('in-progress').addClass('complete')
-        //
-        //     if (steps[index] === step) {
-        //         $step.addClass('in-progress')
-        //         break
-        //     }
-        // }
     },
 
     checkRequirements: function () {

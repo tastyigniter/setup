@@ -1,4 +1,5 @@
 <?php
+
 $settings = $setup->getSettingsDetails();
 ?>
 <h2 class="mb-3"><?= lang('text_settings_heading'); ?></h2>
@@ -80,19 +81,7 @@ $settings = $setup->getSettingsDetails();
         </div>
     </div>
 </div>
-<div class="form-group mb-3">
-    <div class="form-floating">
-        <input
-            id="input-carte-key"
-            type="text"
-            class="form-control"
-            name="site_key"
-        />
-        <label for="input-carte-key"><?= lang('label_site_key'); ?></label>
-    </div>
-    <div class="form-text text-muted"><?= sprintf(lang('help_site_key'), '//tastyigniter.com/account/sites'); ?></div>
-</div>
-<div class="border-top pt-3 mt-4">
+<div class="border-bottom pb-3 mb-4">
     <div class="row">
         <div class="form-group col">
             <input type="hidden" name="site_location_mode" value="single">
@@ -130,6 +119,20 @@ $settings = $setup->getSettingsDetails();
             </div>
         </div>
     </div>
+</div>
+
+<p class="lead mb-4"><?= lang('text_site_key_sub_heading'); ?></p>
+<div class="form-group mb-3">
+    <div class="form-floating">
+        <input
+            id="input-carte-key"
+            type="text"
+            class="form-control"
+            name="carte_key"
+        />
+        <label for="input-carte-key"><?= lang('label_site_key'); ?></label>
+    </div>
+    <div class="form-text text-muted"><?= sprintf(lang('help_site_key'), '//tastyigniter.com/account/sites'); ?></div>
 </div>
 <input type="hidden" name="disableLog" value="1">
 
