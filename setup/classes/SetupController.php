@@ -223,13 +223,16 @@ class SetupController
                 $result = true;
                 break;
             case 'composerUpdate':
+                $this->bootFramework();
                 $result = $this->runComposerUpdate();
                 break;
             case 'composerInstall':
+                $this->bootFramework();
                 $result = $this->runComposerInstall();
                 break;
             case 'finishInstall':
                 // Run migration
+                $this->bootFramework();
                 $this->completeSetup();
                 $this->cleanUpAfterInstall();
 
@@ -452,8 +455,6 @@ class SetupController
 
     protected function completeSetup()
     {
-        $this->bootFramework();
-
         $this->setSeederProperties($this->repository->get('settings'));
 
         // Install the database tables
@@ -583,10 +584,9 @@ class SetupController
     {
         $this->log('Updating package manager...');
         $composer = \System\Classes\ComposerManager::instance();
-        $composer->setOutputBuffer();
 
         try {
-            $composer->update(['composer/composer']);
+            $composer->update();
         }
         catch (Exception $ex) {
             $this->writeLog($composer->getOutputBuffer());
@@ -603,11 +603,8 @@ class SetupController
 
             $item = collect(array_get($this->post('item'), 'items', []))->firstWhere('type', 'theme');
 
-            if ($item && $package = array_get($item, 'package_name')) {
-                $composer->require([$package => $item['version']]);
-            }
-            else {
-                $composer->update();
+            if ($item && $package = array_get($item, 'package')) {
+                $composer->require([$package.':'.$item['version']]);
             }
         }
         catch (Exception $ex) {
