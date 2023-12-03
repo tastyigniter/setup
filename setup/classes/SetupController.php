@@ -467,7 +467,7 @@ class SetupController
     {
         $this->bootFramework();
 
-        $this->setSeederProperties($this->repository->get('settings'));
+        $this->setSeederProperties($this->repository->get('settings', []));
 
         // Install the database tables
         UpdateManager::instance()->update();
