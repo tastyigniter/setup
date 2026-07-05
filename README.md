@@ -1,19 +1,10 @@
 # TastyIgniter Setup Wizard
 
-Web installer for [TastyIgniter v4](https://tastyigniter.com) — designed for shared hosting with **zero shell access**.
+Web installer for [TastyIgniter](https://tastyigniter.com) — designed for shared hosting with **zero shell access**.
 
 Upload this wizard, open `setup.php` in your browser, enter your database credentials, and the installer downloads the pre-vendored TastyIgniter release, writes configuration, and runs `igniter:install` in-process via `Artisan::call()`.
 
 **Full installation guide:** [tastyigniter.com/docs/installation](https://tastyigniter.com/docs/installation)
-
-## Quick start
-
-1. Download the [latest setup wizard ZIP](https://github.com/tastyigniter/setup/releases/latest) from GitHub Releases.
-2. Create a MySQL database and database user in your hosting control panel (new or existing TastyIgniter v3 database for upgrade).
-3. Upload and extract the wizard to your web root (`setup.php` should be reachable in the browser).
-4. Set write permissions on the `setup/` directory.
-5. Visit `http://yoursite.com/setup.php` and follow the 4-step wizard.
-6. Delete `setup.php` and the `setup/` folder when finished.
 
 ## Requirements
 
