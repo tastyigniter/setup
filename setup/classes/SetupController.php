@@ -1,24 +1,7 @@
 <?php
 
-use Admin\Models\Locations_model;
-use Admin\Models\Staff_groups_model;
-use Admin\Models\Staff_roles_model;
-use Admin\Models\Staffs_model;
-use Admin\Models\Users_model;
-use Carbon\Carbon;
-use System\Classes\ExtensionManager;
-use System\Classes\UpdateManager;
-use System\Database\Seeds\DatabaseSeeder;
-use System\Models\Languages_model;
-use System\Models\Themes_model;
-
-/**
- * SetupController Class
- */
 class SetupController
 {
-    public const TI_ENDPOINT = 'https://api.tastyigniter.com/v2';
-
     public $page;
 
     public $logFile;
@@ -27,677 +10,383 @@ class SetupController
 
     protected string $tempDirectory;
 
-    protected string $configDirectory;
+    protected SetupRepository $repository;
 
-    protected $repository;
+    protected RequirementChecker $requirements;
 
     public function __construct()
     {
-        // Establish directory paths
+        @set_time_limit(0);
+
         $this->baseDirectory = BASEPATH;
         $this->tempDirectory = SETUPPATH.'/temp';
-        $this->configDirectory = $this->baseDirectory.'/config';
         $this->logFile = SETUPPATH.'/setup.log';
         $this->writePostToLog();
 
         $this->repository = new SetupRepository(SETUPPATH.'/setup_config');
+        $this->requirements = new RequirementChecker(SETUPPATH, $this->baseDirectory);
 
-        // Execute post handler
         $this->execPostHandler();
     }
 
     public function getPage()
     {
-        if (!$this->page)
+        if (!$this->page) {
             $this->page = new stdClass;
+        }
 
+        $allowed = ['start', 'database', 'install', 'complete'];
         $this->page->currentStep = 'start';
-        if (isset($_GET['step']) && strlen($_GET['step']) && in_array($_GET['step'], ['requirements', 'database', 'settings']))
+
+        if (isset($_GET['step']) && in_array($_GET['step'], $allowed, true)) {
             $this->page->currentStep = $_GET['step'];
+        }
 
         return $this->page;
     }
 
-    //
-    // Post Handlers
-    //
-
     public function onCheckRequirements()
     {
-        $code = $this->post('code');
+        $code = (string)$this->post('code');
         $this->writeLog('System check: %s', $code);
-        $result = false;
-        switch ($code) {
-            case 'php':
-                $result = version_compare(PHP_VERSION, TI_PHP_VERSION, '>=');
-                break;
-            case 'pdo':
-                $result = extension_loaded('pdo') && extension_loaded('pdo_mysql');
-                break;
-            case 'mbstring':
-                $result = extension_loaded('mbstring');
-                break;
-            case 'ssl':
-                $result = extension_loaded('openssl');
-                break;
-            case 'gd':
-                $result = extension_loaded('gd');
-                break;
-            case 'curl':
-                $result = function_exists('curl_init') && defined('CURLOPT_FOLLOWLOCATION');
-                break;
-            case 'zip':
-                $result = class_exists('ZipArchive');
-                break;
-            case 'uploads':
-                $result = ini_get('file_uploads');
-                break;
-            case 'connection':
-                $result = $this->checkLiveConnection();
-                break;
-            case 'writable':
-                @rmdir($this->tempDirectory);
-                $result = @mkdir($this->tempDirectory, 0777, true);
-                @rmdir($this->tempDirectory);
 
-                break;
+        $result = $this->requirements->check($code);
+        $blocking = $this->requirements->isBlocking($code);
+
+        if ($result) {
+            $passed = array_filter(explode(',', (string)$this->repository->get('requirements_passed', '')));
+            if (!in_array($code, $passed, true)) {
+                $passed[] = $code;
+            }
+            $this->repository->set('requirements_passed', implode(',', $passed));
+        } elseif ($blocking) {
+            $this->repository->set('requirements_passed', '');
         }
 
-        $this->repository->set('requirement', $result ? $code : 'fail')->save();
+        $this->repository->save();
+        $this->writeLog('Requirement %s %s', $code, $result ? '+OK' : '=FAIL');
 
-        $this->writeLog('Requirement %s %s', $code, ($result ? '+OK' : '=FAIL'));
-
-        return ['result' => $result];
+        return [
+            'result' => $result,
+            'blocking' => $blocking,
+        ];
     }
 
-    public function onCompleteRequirements()
+    public function onAcceptLicense()
     {
-        $this->repository->set('requirement', (string)$this->post('requirement'))->save();
-        $this->repository->set('license_agreed', (string)$this->post('license_agreed'))->save();
+        if ($this->post('license_agreed') !== 'accepted') {
+            throw new SetupException(lang('alert_license_error'));
+        }
 
-        $this->writeLog('License Agreement: %s', 'accepted');
+        if (!$this->requirementsComplete()) {
+            throw new SetupException(lang('alert_requirement_error'));
+        }
+
+        $this->repository
+            ->set('license_agreed', 'accepted')
+            ->set('requirement', 'complete')
+            ->save();
+
+        $this->writeLog('License accepted');
 
         return ['step' => 'database'];
     }
 
-    public function onCheckDatabase()
+    public function onValidateDatabase()
     {
-        $database = $this->post('database');
-        $this->writeLog('Database check: %s', $database);
-
         $this->confirmRequirements();
 
-        if (!strlen($this->post('host')))
+        if (!strlen($this->post('host'))) {
             throw new SetupException('Please specify a database host');
+        }
 
-        if (!strlen($database = $this->post('database')))
+        if (!strlen($database = $this->post('database'))) {
             throw new SetupException('Please specify the database name');
+        }
 
         $config = $this->verifyDbConfiguration($this->post());
-
         $db = $this->testDbConnection($config);
 
-        $step = ($db && $this->hasDbInstalledSettings($db)) ? 'install' : 'settings';
+        if (!$db->isFreshlyInstalled() && !$db->canUpgradeExistingInstallation()) {
+            throw new SetupException(sprintf(
+                lang('alert_database_in_use'),
+                $this->e($db->config('database'))
+            ));
+        }
 
-        $this->repository->set('database', $config);
-        $result = $this->repository->save();
+        $this->repository->set('database', $config)->save();
+        $this->writeLog('Database %s +OK', $database);
 
-        $this->writeLog('Database %s %s', $database, ($result ? '+OK' : '=FAIL'));
-
-        return $result ? [
-            'step' => $step,
-            'settingsInstalled' => $this->repository->get('settingsInstalled', false),
-        ] : ['result' => $result];
-    }
-
-    public function onValidateSettings()
-    {
-        $siteName = $this->post('site_name');
-        $this->writeLog('Settings check: %s', $siteName);
-
-        $this->confirmRequirements();
-
-        if (!strlen($siteName))
-            throw new SetupException('Please specify your restaurant name');
-
-        if (!strlen($siteEmail = $this->post('site_email')))
-            throw new SetupException('Please specify your restaurant email');
-
-        if (!strlen($adminName = $this->post('staff_name')))
-            throw new SetupException('Please specify the administrator name');
-
-        if (!strlen($username = $this->post('username')))
-            throw new SetupException('Please specify the administrator username');
-
-        $password = $this->post('password');
-        if (!strlen($password) || strlen($password) < 6 || strlen($password) > 32)
-            throw new SetupException('Please specify the administrator password, at least 6 characters and not more than 32 characters.');
-
-        if (!strlen($this->post('confirm_password')))
-            throw new SetupException('Please confirm the administrator password');
-
-        if ($this->post('confirm_password') != $password)
-            throw new SetupException('Password does not match');
-
-        $this->repository->set('site_key', (string)$this->post('site_key'));
-
-        $this->repository->set('settings', [
-            'demo_data' => (int)$this->post('demo_data'),
-            'site_name' => $siteName,
-            'site_email' => $siteEmail,
-            'staff_name' => $adminName,
-            'username' => $username,
-            'password' => $password,
-        ]);
-
-        $result = $this->repository->save();
-        $this->writeLog('Settings %s', ($result ? '+OK' : '=FAIL'));
-
-        return $result ? ['step' => 'install'] : ['result' => $result];
+        return ['step' => 'install'];
     }
 
     public function onInstall()
     {
-        $installStep = $this->post('process');
-        $this->writeLog('Foundation setup: %s', $installStep);
-        $result = false;
+        $this->confirmRequirements();
 
-        $item = $this->post('item');
-
-        $params = [];
-        if ($this->post('step') != 'complete' && isset($item['code'])) {
-            $params = [
-                'name' => $item['code'],
-                'type' => $item['type'],
-                'ver' => $item['version'],
-                'action' => $item['action'],
-            ];
+        if (!$this->repository->get('database')) {
+            throw new SetupException('Database configuration is missing.');
         }
 
-        switch ($installStep) {
-            case 'apply':
-                $result = $this->applyInstall();
-                break;
-            case 'downloadExtension':
-            case 'downloadTheme':
-            case 'downloadCore':
-                if ($this->downloadFile($item['code'], $item['hash'], $params))
-                    $result = true;
-                break;
-            case 'extractExtension':
-                if ($this->extractFile($item['code'], 'extensions/'))
-                    $result = true;
-                break;
-            case 'extractTheme':
-                if ($this->extractFile($item['code'], 'themes/'))
-                    $result = true;
+        @set_time_limit(0);
 
-                $this->repository->set('activeTheme', $item['code']);
-                break;
-            case 'extractCore':
-                if ($this->extractFile($item['code']))
-                    $result = true;
+        $process = (string)$this->post('process');
+        $this->writeLog('Install step: %s', $process);
 
-                $this->repository->set('core', $item);
-                break;
-            case 'writeConfig':
-                $this->moveExampleFile('env', null, 'backup');
-                $this->moveExampleFile('env', 'example', null);
+        $result = match ($process) {
+            'prepare' => $this->installPrepare(),
+            'download' => $this->installDownload(),
+            'extract' => $this->installExtract(),
+            'config' => $this->installConfig(),
+            'install' => $this->installApplication(),
+            'finalize' => $this->installFinalize(),
+            default => throw new SetupException('Unknown install step.'),
+        };
 
-                $this->rewriteEnvFile();
-
-                $result = true;
-                break;
-            case 'finishInstall':
-                // Run migration
-                $this->completeSetup();
-                $this->completeInstall();
-                $this->cleanUpAfterInstall();
-
-                $this->moveExampleFile('htaccess', null, 'backup');
-                $this->copyExampleFile('htaccess', 'example', null);
-
-                $result = admin_url('login');
-                break;
-        }
-
-        $status = $installStep == 'install' ? 'complete' : $installStep;
-        $this->repository->set('install', $result ? $status : 'fail')->save();
-
-        $this->writeLog('Foundation setup: %s %s', $installStep, ($result ? '+OK' : '=FAIL'));
+        $this->repository->set('install', $process)->save();
+        $this->writeLog('Install step %s +OK', $process);
 
         return ['result' => $result];
+    }
+
+    protected function installPrepare(): bool
+    {
+        if (!is_dir($this->tempDirectory) && !mkdir($this->tempDirectory, 0755, true) && !is_dir($this->tempDirectory)) {
+            throw new SetupException('Unable to create temporary directory.');
+        }
+
+        if (!is_writable($this->baseDirectory)) {
+            throw new SetupException('Installation directory is not writable.');
+        }
+
+        return true;
+    }
+
+    protected function installDownload(): array
+    {
+        $offset = (int)$this->post('offset', 0);
+        $downloader = new ReleaseDownloader(
+            $this->tempDirectory,
+            fn (...$args) => $this->writeLog(...$args),
+            $this->getPinnedVersion(),
+            $this->getCachedReleaseInfo()
+        );
+
+        $progress = $downloader->download($offset);
+        $release = $downloader->getReleaseInfo();
+
+        $this->repository
+            ->set('release_tag', $progress['tag'])
+            ->set('release_version', $progress['version'])
+            ->set('release_download_url', $release['asset']['url'])
+            ->set('release_asset_name', $release['asset']['name'])
+            ->set('release_asset_size', $release['asset']['size'])
+            ->save();
+
+        unset($progress['asset']);
+
+        return $progress;
+    }
+
+    protected function installExtract(): bool
+    {
+        $version = $this->getPinnedVersion();
+        $downloader = new ReleaseDownloader(
+            $this->tempDirectory,
+            fn (...$args) => $this->writeLog(...$args),
+            $version
+        );
+
+        $downloader->extract($this->baseDirectory);
+
+        return true;
+    }
+
+    protected function installConfig(): bool
+    {
+        $database = $this->repository->get('database', []);
+        $writer = new EnvWriter($this->baseDirectory);
+        $writer->write($database, $this->getBaseUrl());
+
+        $runner = new ArtisanRunner($this->baseDirectory, fn (...$args) => $this->writeLog(...$args));
+        $runner->run('key:generate', ['--force' => true]);
+
+        return true;
+    }
+
+    protected function installApplication(): bool
+    {
+        $runner = new ArtisanRunner($this->baseDirectory, fn (...$args) => $this->writeLog(...$args));
+        $runner->run('igniter:install', ['--force' => true, '--no-interaction' => true]);
+
+        return true;
+    }
+
+    protected function installFinalize(): array
+    {
+        $runner = new ArtisanRunner($this->baseDirectory, fn (...$args) => $this->writeLog(...$args));
+
+        try {
+            $runner->run('storage:link', ['--force' => true]);
+        } catch (SetupException $ex) {
+            $this->writeLog('storage:link skipped: %s', $ex->getMessage());
+        }
+
+        $this->writeRootHtaccess();
+        $this->cleanUpAfterInstall();
+
+        return [
+            'adminUrl' => rtrim($this->getBaseUrl(), '/').'/admin',
+            'frontUrl' => rtrim($this->getBaseUrl(), '/').'/',
+        ];
+    }
+
+    protected function writeRootHtaccess(): void
+    {
+        $htaccess = $this->baseDirectory.'/.htaccess';
+
+        if (is_file($htaccess)) {
+            return;
+        }
+
+        $contents = <<<'HTACCESS'
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+HTACCESS;
+
+        file_put_contents($htaccess, $contents);
+        $this->writeLog('Generated root .htaccess redirect to public/');
+    }
+
+    protected function cleanUpAfterInstall(): void
+    {
+        if (is_dir($this->tempDirectory)) {
+            $this->deleteDirectory($this->tempDirectory);
+        }
     }
 
     protected function execPostHandler()
     {
         $handler = $this->post('handler');
-        if (!is_null($handler)) {
-            if (!strlen($handler)) exit;
+        if ($handler === null) {
+            return;
+        }
 
-            try {
-                if (!preg_match('/^on[A-Z]{1}[\w+]*$/', $handler))
-                    throw new SetupException(sprintf('Invalid handler: %s', $this->e($handler)));
-                if (method_exists($this, $handler) && ($result = $this->$handler()) !== null) {
-                    $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, true));
-                    header('Content-Type: application/json');
-                    exit(json_encode($result));
-                }
-            }
-            catch (Exception $ex) {
-                header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', true, 500);
-                $this->writeLog('Handler error (%s): %s', $handler, $ex->getMessage());
-                $this->writeLog(['Trace log:', '%s'], $ex->getTraceAsString());
-                exit($ex->getMessage());
-            }
+        if ($handler === '') {
             exit;
         }
-    }
-
-    //
-    // Database
-    //
-
-    public function checkDatabase()
-    {
-        if (!$config = $this->repository->get('database', []))
-            return false;
-
-        // Make sure the database name is specified
-        if (!isset($config['host']))
-            return false;
 
         try {
-            $this->testDbConnection($config);
-        }
-        catch (Exception $ex) {
-            return false;
+            if (!preg_match('/^on[A-Z][\w]*$/', $handler)) {
+                throw new SetupException(sprintf('Invalid handler: %s', $this->e($handler)));
+            }
+
+            if (method_exists($this, $handler) && ($result = $this->$handler()) !== null) {
+                $this->writeLog('Execute handler (%s): %s', $handler, print_r($result, true));
+                header('Content-Type: application/json');
+                exit(json_encode($result));
+            }
+        } catch (Exception $ex) {
+            header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', true, 500);
+            $this->writeLog('Handler error (%s): %s', $handler, $ex->getMessage());
+            $this->writeLog(['Trace log:', '%s'], $ex->getTraceAsString());
+            exit($ex->getMessage());
         }
 
-        // At this point,
-        // its clear database configuration is set
-        // and connection successful
-        return true;
+        exit;
     }
 
-    protected function testDbConnection($config = [])
+    protected function testDbConnection(array $config = [])
     {
         try {
             $db = SetupPDO::makeFromConfig($config);
 
-            if (!$db->compareInstalledVersion())
+            if (!$db->compareInstalledVersion()) {
                 throw new SetupException(lang('text_mysql_version'));
-        }
-        catch (PDOException $ex) {
+            }
+        } catch (PDOException $ex) {
             throw new SetupException('Connection failed: '.$ex->getMessage());
         }
 
         return $db;
     }
 
-    protected function verifyDbConfiguration($config)
+    protected function verifyDbConfiguration($config): array
     {
-        $result = [];
-        $result['host'] = '127.0.0.1';
-        if (isset($config['host']) && is_string($config['host']))
-            $result['host'] = trim($config['host']);
+        $result = [
+            'host' => '127.0.0.1',
+            'port' => 3306,
+            'database' => '',
+            'username' => '',
+            'password' => '',
+            'prefix' => 'ti_',
+        ];
 
-        $result['port'] = 3306;
-        if (isset($config['port']) && is_string($config['port']))
-            $result['port'] = trim($config['port']);
-
-        $result['database'] = '';
-        if (isset($config['database']) && is_string($config['database']))
-            $result['database'] = trim($config['database']);
-
-        $result['username'] = '';
-        if (isset($config['username']) && is_string($config['username']))
-            $result['username'] = trim($config['username']);
-
-        $result['password'] = '';
-        if (isset($config['password']) && is_string($config['password']))
-            $result['password'] = $config['password'];
-
-        $result['prefix'] = 'ti_';
-        if (isset($config['prefix']) && is_string($config['prefix']))
-            $result['prefix'] = trim($config['prefix']);
+        foreach (['host', 'port', 'database', 'username', 'password', 'prefix'] as $key) {
+            if (isset($config[$key]) && is_string($config[$key])) {
+                $result[$key] = $key === 'password' ? $config[$key] : trim($config[$key]);
+            }
+        }
 
         return $result;
     }
 
-    /**
-     * @param \SetupPDO $db
-     *
-     * @return bool
-     */
-    protected function hasDbInstalledSettings($db)
+    protected function confirmRequirements(): void
     {
-        $this->repository->set('settingsInstalled', false);
-
-        // Nothing to import if database has no existing tables
-        if ($db->isFreshlyInstalled())
-            return false;
-
-        // Check whether to import existing database tables
-        if ($db->hasPreviouslyInstalledSettings()) {
-            $this->repository->set('settingsInstalled', true);
-
-            return true;
+        if ($this->repository->get('license_agreed') !== 'accepted') {
+            throw new SetupException(lang('alert_license_error'));
         }
 
-        throw new SetupException(sprintf(
-            'Database "%s" is not empty. Please use an empty database or specify a different database table prefix.',
-            $this->e($db->config('database'))
-        ));
-    }
-
-    //
-    // Setup steps
-    //
-
-    protected function applyInstall()
-    {
-        $params = $this->processInstallItems();
-
-        $response = $this->requestRemoteData('core/install', $params);
-
-        return $this->buildProcessSteps($response);
-    }
-
-    protected function processInstallItems()
-    {
-        $params = $items = [];
-
-        if (!strlen($themeCode = $this->post('themeCode')))
-            return $params;
-
-        if ($dependencies = $this->fetchThemeDependencies($themeCode)) {
-            foreach ($dependencies as $dependency) {
-                $items[] = ['name' => $dependency['code'], 'type' => $dependency['type']];
-            }
+        if (!$this->requirementsComplete()) {
+            throw new SetupException(lang('alert_requirement_error'));
         }
-
-        $items[] = ['name' => $themeCode, 'type' => 'theme'];
-
-        $params['items'] = $items;
-
-        return $params;
     }
 
-    protected function buildProcessSteps($response)
+    protected function requirementsComplete(): bool
     {
-        $processSteps = [];
+        $passed = array_filter(explode(',', (string)$this->repository->get('requirements_passed', '')));
 
-        foreach (['download', 'extract', 'config', 'install'] as $step) {
-            $applySteps = [];
-
-            if (in_array($step, ['config', 'install'])) {
-                $processSteps[$step][] = [
-                    'items' => $response['data'],
-                    'process' => $step == 'install' ? 'finishInstall' : 'writeConfig',
-                ];
-
+        foreach (RequirementChecker::definitions() as $code => $definition) {
+            if (!empty($definition['warning'])) {
                 continue;
             }
 
-            foreach ($response['data'] as $item) {
-                if ($item['type'] == 'core') {
-                    $applySteps[] = array_merge([
-                        'action' => 'install',
-                        'process' => "{$step}Core",
-                    ], $item);
-                }
-                else {
-                    $singularType = $item['type'];
-
-                    $applySteps[] = array_merge([
-                        'action' => 'install',
-                        'process' => $step.ucfirst($singularType),
-                    ], $item);
-                }
+            if (!in_array($code, $passed, true) || !$this->requirements->check($code)) {
+                return false;
             }
-
-            $processSteps[$step] = $applySteps;
         }
 
-        return $processSteps;
+        return true;
     }
 
-    protected function completeSetup()
+    protected function getCachedReleaseInfo(): ?array
     {
-        $this->bootFramework();
-
-        $this->setSeederProperties($this->repository->get('settings', []));
-
-        // Install the database tables
-        UpdateManager::instance()->update();
-
-        // Create the admin user if no admin exists.
-        $this->createSuperUser();
-
-        $this->addSystemParameters();
-
-        if ($this->repository->get('settingsInstalled', false) === true)
-            return;
-
-        // Save the site configuration to the settings table
-        $this->addSystemSettings();
-    }
-
-    protected function createSuperUser()
-    {
-        // Abort: a super admin user already exists
-        if (Users_model::where('super_user', 1)->count())
-            return true;
-
-        if ($this->repository->get('settingsInstalled') === true)
-            return optional(Users_model::first())->update(['super_user' => 1]);
-
-        $config = $this->repository->get('settings');
-
-        $staffEmail = strtolower($config['site_email']);
-        $staff = Staffs_model::firstOrNew([
-            'staff_email' => $staffEmail,
-        ]);
-
-        $staff->staff_name = $config['staff_name'];
-        $staff->staff_role_id = Staff_roles_model::first()->staff_role_id;
-        $staff->language_id = Languages_model::first()->language_id;
-        $staff->staff_status = true;
-        $staff->save();
-
-        $staff->groups()->attach(Staff_groups_model::first()->staff_group_id);
-        $staff->locations()->attach(Locations_model::first()->location_id);
-
-        $user = Users_model::firstOrNew([
-            'username' => $config['username'],
-        ]);
-
-        $user->staff_id = $staff->staff_id;
-        $user->password = $config['password'];
-        $user->super_user = true;
-        $user->is_activated = true;
-        $user->date_activated = Carbon::now();
-
-        return $user->save();
-    }
-
-    protected function addSystemSettings()
-    {
-        setting()->flushCache();
-
-        $settings = $this->repository->get('settings');
-        $settings['sender_name'] = array_get($settings, 'site_name');
-        $settings['sender_email'] = array_get($settings, 'site_email');
-
-        setting()->set($settings);
-
-        setting()->save();
-    }
-
-    protected function addSystemParameters()
-    {
-        $core = $this->repository->get('core');
-
-        params()->flushCache();
-
-        params()->set([
-            'ti_setup' => 'installed',
-            'ti_version' => array_get($core, 'version'),
-            'sys_hash' => array_get($core, 'hash'),
-            'site_key' => $this->repository->get('site_key'),
-            'default_location_id' => Locations_model::first()->location_id,
-        ]);
-
-        // These parameter are no longer in use
-        params()->forget('main_address');
-
-        params()->save();
-    }
-
-    protected function completeInstall()
-    {
-        $item = $this->post('item');
-        $items = $item['items'] ?? [];
-        foreach ($items as $item) {
-            if ($item['type'] != 'extension')
-                continue;
-
-            ExtensionManager::instance()->installExtension($item['code'], $item['version']);
+        $url = $this->repository->get('release_download_url');
+        if (!$url) {
+            return null;
         }
 
-        Themes_model::syncAll();
-        Themes_model::activateTheme($this->repository->get('activeTheme', 'demo'));
+        return [
+            'tag' => $this->repository->get('release_tag'),
+            'version' => $this->repository->get('release_version'),
+            'asset' => [
+                'name' => $this->repository->get('release_asset_name', ''),
+                'url' => $url,
+                'size' => (int)$this->repository->get('release_asset_size', 0),
+            ],
+        ];
     }
 
-    protected function cleanUpAfterInstall()
+    protected function getPinnedVersion(): ?string
     {
-        if (file_exists($this->tempDirectory)) {
-            File::deleteDirectory($this->tempDirectory);
+        if (isset($_GET['version']) && strlen($_GET['version'])) {
+            return trim($_GET['version']);
         }
 
-        // Delete the setup repository file since its no longer needed
-        $this->repository->destroy();
+        return null;
     }
-
-    protected function setSeederProperties($properties)
-    {
-        DatabaseSeeder::$siteName = $properties['site_name'];
-        DatabaseSeeder::$siteEmail = strtolower($properties['site_email']);
-        DatabaseSeeder::$staffName = $properties['staff_name'];
-        DatabaseSeeder::$seedDemo = (bool)$properties['demo_data'];
-    }
-
-    //
-    // File
-    //
-
-    protected function getFilePath($fileCode)
-    {
-        $fileName = md5($fileCode).'.zip';
-
-        return "$this->tempDirectory/$fileName";
-    }
-
-    protected function downloadFile($fileCode, $fileHash, $params)
-    {
-        return $this->requestRemoteFile('core/download', [
-            'item' => $params,
-        ], $fileCode, $fileHash);
-    }
-
-    protected function extractFile($fileCode, $directory = null)
-    {
-        $filePath = $this->getFilePath($fileCode);
-        $this->writeLog('Extracting [%s] file %s', $fileCode, basename($filePath));
-
-        $extractTo = $this->baseDirectory;
-        if ($directory)
-            $extractTo .= '/'.$directory.str_replace('.', '/', $fileCode);
-
-        if (!file_exists($extractTo) && !mkdir($extractTo, 0777, true) && !is_dir($extractTo)) {
-            throw new RuntimeException(sprintf('Directory "%s" was not created', $extractTo));
-        }
-
-        $zip = new ZipArchive();
-        if ($zip->open($filePath) === true) {
-            $zip->extractTo($extractTo);
-            $zip->close();
-            @unlink($filePath);
-
-            return true;
-        }
-
-        $this->writeLog('Unable to open [%s] archive file %s', $fileCode, basename($filePath));
-
-        return false;
-    }
-
-    protected function rewriteEnvFile()
-    {
-        $env = $this->baseDirectory.'/.env';
-
-        if (!file_exists($env))
-            return;
-
-        $database = $this->repository->get('database');
-        foreach ($database as $config => $value) {
-            if ($config === 'password') $value = '"'.$value.'"';
-            $this->replaceInEnv('DB_'.strtoupper($config).'=', 'DB_'.strtoupper($config).'='.$value, $env);
-        }
-
-        $setting = $this->repository->get('settings');
-
-        $this->replaceInEnv('APP_NAME=', 'APP_NAME="'.$setting['site_name'].'"', $env);
-        $this->replaceInEnv('APP_URL=', 'APP_URL='.$this->getBaseUrl(), $env);
-        $this->replaceInEnv('APP_KEY=', 'APP_KEY='.$this->generateKey(), $env);
-        $this->replaceInEnv('IGNITER_LOCATION_MODE=', 'IGNITER_LOCATION_MODE='.$setting['site_location_mode'], $env);
-
-        // Boot the framework after database config has been written
-        // to eliminate database connection error.
-        $this->bootFramework();
-    }
-
-    protected function moveExampleFile($name, $old, $new)
-    {
-        // /$old.$name => /$new.$name
-        if (file_exists($this->baseDirectory.'/'.$old.'.'.$name)) {
-            rename(
-                $this->baseDirectory.'/'.$old.'.'.$name,
-                $this->baseDirectory.'/'.$new.'.'.$name
-            );
-        }
-    }
-
-    protected function copyExampleFile($name, $old, $new)
-    {
-        // /$old.$name => /$new.$name
-        if (file_exists($this->baseDirectory.'/'.$old.'.'.$name)) {
-            if (file_exists($this->baseDirectory.'/'.$new.'.'.$name))
-                unlink($this->baseDirectory.'/'.$new.'.'.$name);
-
-            copy($this->baseDirectory.'/'.$old.'.'.$name, $this->baseDirectory.'/'.$new.'.'.$name);
-        }
-    }
-
-    protected static function generateKey()
-    {
-        return 'base64:'.base64_encode(random_bytes(32));
-    }
-
-    protected function replaceInEnv(string $search, string $replace)
-    {
-        $file = $this->baseDirectory.'/.env';
-
-        file_put_contents(
-            $file,
-            preg_replace('/^'.$search.'(.*)$/m', $replace, file_get_contents($file))
-        );
-    }
-
-    //
-    // Helpers
-    //
 
     public function getDatabaseDetails()
     {
@@ -711,15 +400,14 @@ class SetupController
         ];
 
         $settings = [];
-        $db = $this->repository->get('database');
+        $db = $this->repository->get('database', []);
+
         foreach ($defaults as $item => $value) {
             if ($this->post($item)) {
                 $settings[$item] = $this->post($item);
-            }
-            elseif (isset($db[$item])) {
+            } elseif (isset($db[$item])) {
                 $settings[$item] = $db[$item];
-            }
-            else {
+            } else {
                 $settings[$item] = $value;
             }
         }
@@ -727,261 +415,61 @@ class SetupController
         return (object)$settings;
     }
 
-    public function getSettingsDetails()
+    protected function getBaseUrl(): string
     {
-        $defaults = [
-            'site_location_mode' => 'multiple',
-            'site_name' => 'TastyIgniter',
-            'site_email' => 'admin@restaurant.com',
-            'staff_name' => 'Chef Sam',
-            'username' => 'admin',
-            'demo_data' => 1,
-        ];
+        if (!isset($_SERVER['HTTP_HOST'])) {
+            return 'http://localhost/';
+        }
 
-        $settings = [];
-        foreach ($defaults as $item => $value) {
-            if ($this->post($item)) {
-                $settings[$item] = $this->post($item);
-            }
-            elseif ($this->repository->has($item)) {
-                $settings[$item] = $this->repository->get($item);
-            }
-            else {
-                $settings[$item] = $value;
+        $scheme = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
+        $path = str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
+
+        return $scheme.'://'.$_SERVER['HTTP_HOST'].$path;
+    }
+
+    protected function deleteDirectory(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
             }
         }
 
-        return (object)$settings;
+        rmdir($directory);
     }
 
-    protected function confirmRequirements()
+    protected function e($value): string
     {
-        $licenseAgreed = $this->repository->get('license_agreed');
-        if (!strlen($licenseAgreed) || $licenseAgreed != 'accepted')
-            throw new SetupException('Please accept the TastyIgniter license before proceeding.');
-
-        $requirement = $this->repository->get('requirement');
-        if (!strlen($requirement) || $requirement != 'complete')
-            throw new SetupException('Please make sure your system meets all requirements');
-    }
-
-    protected function bootFramework()
-    {
-        if (!is_file($this->baseDirectory.'/vendor/tastyigniter/flame/src/Support/helpers.php'))
-            throw new SetupException('Missing vendor files.');
-
-        $autoloadFile = $this->baseDirectory.'/bootstrap/autoload.php';
-        if (!file_exists($autoloadFile))
-            throw new SetupException('Autoloader file was not found.');
-
-        include $autoloadFile;
-
-        $appFile = $this->baseDirectory.'/bootstrap/app.php';
-        if (!file_exists($appFile))
-            throw new SetupException('App loader file was not found.');
-
-        $app = require_once $appFile;
-
-        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-    }
-
-    protected function e($value)
-    {
-        return htmlentities($value, ENT_QUOTES, 'UTF-8', false);
-    }
-
-    protected function server($key, $default = null)
-    {
-        if (array_key_exists($key, $_SERVER)) {
-            $result = $_SERVER[$key];
-            if (is_string($result)) $result = trim($result);
-
-            return $result;
-        }
-
-        return $default;
+        return htmlentities((string)$value, ENT_QUOTES, 'UTF-8', false);
     }
 
     protected function post($key = null, $default = null)
     {
-        if (is_null($key))
+        if ($key === null) {
             return $_POST;
+        }
 
         if (array_key_exists($key, $_POST)) {
             $result = $_POST[$key];
-            if (is_string($result)) $result = trim($result);
 
-            return $result;
+            return is_string($result) ? trim($result) : $result;
         }
 
         return $default;
     }
 
-    protected function session($key, $default = null)
-    {
-        if (array_key_exists($key, $_SESSION)) {
-            $result = $_SESSION[$key];
-            if (is_string($result)) $result = trim($result);
-
-            return $result;
-        }
-
-        return $default;
-    }
-
-    protected function getBaseUrl()
-    {
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $baseUrl = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
-            $baseUrl .= '://'.$_SERVER['HTTP_HOST'];
-            $baseUrl .= str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
-        }
-        else {
-            $baseUrl = 'http://localhost/';
-        }
-
-        return $baseUrl;
-    }
-
-    protected function requestRemoteData($uri, $params = [])
-    {
-        $result = null;
-        $error = null;
-
-        try {
-            $this->writeLog('Server request: %s', $uri);
-
-            $curl = $this->prepareRequest($uri, $params);
-            $result = curl_exec($curl);
-
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            if ($httpCode == 500) {
-                $error = $result;
-                $result = '';
-            }
-
-            $this->writeLog('Request information: %s', print_r(curl_getinfo($curl), true));
-            curl_close($curl);
-        }
-        catch (Exception $ex) {
-            $this->writeLog('Failed to get server data (ignored): '.$ex->getMessage());
-        }
-
-        if ($error !== null)
-            throw new SetupException('Server responded with error: '.$error);
-
-        try {
-            $_result = @json_decode($result, true);
-        }
-        catch (Exception $ex) {
-        }
-
-        if (!is_array($_result)) {
-            $this->writeLog('Server response: '.$result);
-
-            throw new SetupException('Server returned an invalid response.');
-        }
-
-        if (isset($_result['message']) && !in_array($httpCode, [200, 201])) {
-            if (isset($_result['errors']))
-                $this->writeLog('Server validation errors: '.print_r($_result['errors'], true));
-
-            throw new SetupException($_result['message']);
-        }
-
-        return $_result;
-    }
-
-    protected function requestRemoteFile($uri, array $params, $code, $expectedHash)
-    {
-        if (!mkdir($this->tempDirectory, 0777, true) && !is_dir($this->tempDirectory))
-            throw new SetupException(sprintf('Failed to create temp directory: %s', $this->tempDirectory));
-
-        try {
-            $filePath = $this->getFilePath($code);
-            $curl = $this->prepareRequest($uri, $params);
-            $fileStream = fopen($filePath, 'wb');
-            curl_setopt($curl, CURLOPT_FILE, $fileStream);
-            curl_exec($curl);
-
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            if ($httpCode == 500)
-                throw new SetupException(file_get_contents($filePath));
-            curl_close($curl);
-            fclose($fileStream);
-        }
-        catch (Exception $ex) {
-            $this->writeLog('Server responded with error: '.$ex->getMessage());
-
-            throw new SetupException('Server responded with error: '.$ex->getMessage());
-        }
-
-        $fileSha = sha1_file($filePath);
-        if ($expectedHash != $fileSha) {
-            $this->writeLog(file_get_contents($filePath));
-            $this->writeLog("Download failed, File hash mismatch: $expectedHash (expected) vs $fileSha (actual)");
-            @unlink($filePath);
-
-            throw new SetupException('Downloaded files from server are corrupt, check setup.log');
-        }
-
-        $this->writeLog('Downloaded file (%s) to %s', $code, $filePath);
-
-        return true;
-    }
-
-    protected function prepareRequest($uri, $params = [])
-    {
-        $params['client'] = 'tastyigniter';
-        $params['server'] = base64_encode(serialize([
-            'php' => PHP_VERSION,
-            'url' => $this->getBaseUrl(),
-            'version' => $this->repository->get('ti_version'),
-        ]));
-
-        if (isset($_GET['edge']) && $_GET['edge'] == 1)
-            $params['edge'] = 1;
-
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, static::TI_ENDPOINT.'/'.$uri);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 3600);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
-
-        // Used to skip SSL Check on Wamp Server which causes the Live Status Check to fail
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
-        if (strlen($siteKey = $this->repository->get('site_key'))) {
-            curl_setopt($curl, CURLOPT_HTTPHEADER, ["TI-Rest-Key: bearer {$siteKey}"]);
-        }
-
-        return $curl;
-    }
-
-    protected function fetchThemeDependencies($themeCode)
-    {
-        $theme = $this->requestRemoteData('item/detail', [
-            'item' => [
-                'name' => $themeCode ?? 'tastyigniter-orange',
-                'type' => 'theme',
-            ],
-            'include' => 'require',
-        ]);
-
-        if (!isset($theme['data']['require']['data'])
-            || !is_array($theme['data']['require']['data'])
-            || !count($theme['data']['require']['data'])
-        ) return [];
-
-        return $theme['data']['require']['data'];
-    }
-
-    //
-    // Logging
-    //
-
-    public function cleanLog()
+    public function cleanLog(): void
     {
         $message = '.++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.'."\n";
         $message .= '.------------------- TASTYIGNITER SETUP LOG ------------------.'."\n";
@@ -989,56 +477,41 @@ class SetupController
         file_put_contents($this->logFile, $message.PHP_EOL);
     }
 
-    public function writeLog()
+    public function writeLog(): void
     {
         $args = func_get_args();
-
         $message = array_shift($args);
-        if (is_array($message))
+
+        if (is_array($message)) {
             $message = implode(PHP_EOL, $message);
+        }
 
         $date = '';
-        if (!array_key_exists('hideTime', $args))
-            $date = '['.date('Y/m/d h:i:s').'] => ';
+        if (!array_key_exists('hideTime', $args)) {
+            $date = '['.date('Y/m/d H:i:s').'] => ';
+        }
 
-        $message = vsprintf($date.$message, $args).PHP_EOL;
-
-        file_put_contents($this->logFile, $message, FILE_APPEND);
+        file_put_contents($this->logFile, vsprintf($date.$message.PHP_EOL, $args), FILE_APPEND);
     }
 
-    protected function writePostToLog()
+    protected function writePostToLog(): void
     {
-        if (!isset($_POST) || !count($_POST)) return;
+        if (!isset($_POST) || !count($_POST)) {
+            return;
+        }
 
         $postData = $_POST;
-        if (array_key_exists('disableLog', $postData))
+        if (array_key_exists('disableLog', $postData)) {
             $postData = ['disableLog' => true];
+        }
 
-        // Filter sensitive data fields
-        $fieldsToErase = [
-            'encryption_code',
-            'admin_password',
-            'admin_confirm_password',
-            'db_pass',
-            'project_id',
-        ];
-
-        if (isset($postData['admin_email'])) $postData['admin_email'] = '*******@*****.com';
-        foreach ($fieldsToErase as $field) {
-            if (isset($postData[$field])) $postData[$field] = '*******';
+        foreach (['password', 'confirm_password'] as $field) {
+            if (isset($postData[$field])) {
+                $postData[$field] = '*******';
+            }
         }
 
         $this->writeLog('.============================ POST REQUEST ==========================.', ['hideTime' => true]);
         $this->writeLog('Postback payload: %s', print_r($postData, true));
-    }
-
-    protected function checkLiveConnection()
-    {
-        $result = $this->requestRemoteData('ping') ?: [];
-
-        $latestVersion = $result['pong'];
-        $this->repository->set('ti_version', $latestVersion);
-
-        return (bool)strlen($latestVersion);
     }
 }

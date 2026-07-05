@@ -1,17 +1,52 @@
-Setup Wizard for TastyIgniter :wrench: :fire:
-====
+# TastyIgniter Setup Wizard
 
-Using this wizard is the recommended way to install and setup TastyIgniter. 
+Web installer for [TastyIgniter v4](https://tastyigniter.com) — designed for shared hosting with **zero shell access**.
 
-1. Download and unzip the [setup archive file](https://github.com/tastyigniter/setup/archive/master.zip) into an empty directory on your server.
-2. Create a MySQL user database for TastyIgniter.
-3. Upload the setup archive to your server. Normally the setup.php file will be at your root.
-4. Grant write permissions on the setup directory, its subdirectories and files.
-4. Run the TastyIgniter setup script by accessing setup.php in your web browser. Example, http://example.com/setup.php or http://example.com/folder/setup.php
-5. Follow all onscreen instructions and make sure all installation requirements are checked.
+Upload this wizard, open `setup.php` in your browser, enter your database credentials, and the installer downloads the pre-vendored TastyIgniter release, writes configuration, and runs `igniter:install` in-process via `Artisan::call()`.
 
-### Installation
-Please read the [Installation Guide](https://tastyigniter.com/docs/installation) for more information.
+**Full installation guide:** [tastyigniter.com/docs/installation](https://tastyigniter.com/docs/installation)
 
-### License
-The MIT License (MIT). Please see License File for more information.
+## Quick start
+
+1. Download the [latest setup wizard ZIP](https://github.com/tastyigniter/setup/releases/latest) from GitHub Releases.
+2. Create a MySQL database and database user in your hosting control panel (new or existing TastyIgniter v3 database for upgrade).
+3. Upload and extract the wizard to your web root (`setup.php` should be reachable in the browser).
+4. Set write permissions on the `setup/` directory.
+5. Visit `http://yoursite.com/setup.php` and follow the 4-step wizard.
+6. Delete `setup.php` and the `setup/` folder when finished.
+
+## Requirements
+
+| Requirement | Minimum |
+|-------------|---------|
+| PHP | 8.3+ |
+| Database | MySQL 8.0+ or MariaDB 10.6+ |
+| Web server | Apache or Nginx with URL rewriting |
+| Composer / SSH | **Not required** on the host |
+
+Required PHP extensions: `bcmath`, `ctype`, `curl`, `dom`, `exif`, `gd`, `intl`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip`.
+
+## What the wizard does
+
+1. Checks server requirements
+2. Downloads the pre-vendored TastyIgniter release from GitHub (includes `vendor/`)
+3. Extracts files and writes your `.env` database settings
+4. Runs `igniter:install` via Laravel's `Artisan::call()` — no CLI needed
+5. Generates a root `.htaccess` redirect to `public/` when needed
+
+## Troubleshooting
+
+See the [installation troubleshooting guide](https://tastyigniter.com/docs/installation#troubleshooting). Detailed logs are written to `setup/setup.log`.
+
+## Development
+
+```bash
+cd setup/assets
+npm install
+npm run dev    # watch mode
+npm run build  # production assets → css/app.css, js/app.js
+```
+
+## License
+
+MIT — see [LICENSE.txt](LICENSE.txt).

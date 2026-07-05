@@ -30,9 +30,10 @@ class SetupPDO extends PDO
     {
         extract($config);
 
-        // Try connecting to database using the specified driver
         $dsn = 'mysql:host='.$host.';dbname='.$database;
-        if ($port) $dsn .= ';port='.$port;
+        if ($port) {
+            $dsn .= ';port='.$port;
+        }
 
         $options = [self::ATTR_ERRMODE => self::ERRMODE_EXCEPTION];
 
@@ -48,6 +49,41 @@ class SetupPDO extends PDO
 
     public function isFreshlyInstalled()
     {
+        return $this->countPrefixedTables() < 1;
+    }
+
+    public function canUpgradeExistingInstallation(): bool
+    {
+        $settingsTable = $this->prefixedTable('settings');
+
+        if (!$this->tableExists($settingsTable)) {
+            return false;
+        }
+
+        if ($this->settingExists('ti_version')) {
+            return true;
+        }
+
+        if ($this->tableHasRows($settingsTable)) {
+            return true;
+        }
+
+        foreach (['locations', 'users', 'categories'] as $table) {
+            if ($this->tableExists($this->prefixedTable($table))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function hasPreviouslyInstalledSettings()
+    {
+        return $this->canUpgradeExistingInstallation();
+    }
+
+    protected function countPrefixedTables(): int
+    {
         $fetch = $this->query(
             "show tables where `tables_in_{$this->configDatabase}` like '".
             str_replace('_', '\\_', $this->configPrefix)."%'",
@@ -55,15 +91,51 @@ class SetupPDO extends PDO
         );
 
         $tables = 0;
-        while ($result = $fetch->fetch()) $tables++;
+        while ($fetch->fetch()) {
+            $tables++;
+        }
 
-        return $tables < 1;
+        return $tables;
     }
 
-    public function hasPreviouslyInstalledSettings()
+    protected function prefixedTable(string $name): string
     {
-        $tableName = sprintf('%s%s', $this->configPrefix, 'settings');
-        $fetch = $this->query("select * from {$tableName} where item = ".$this->quote('ti_version'), static::FETCH_ASSOC);
+        return sprintf('%s%s', $this->configPrefix, $name);
+    }
+
+    protected function tableExists(string $tableName): bool
+    {
+        $statement = $this->prepare(
+            'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?'
+        );
+        $statement->execute([$this->configDatabase, $tableName]);
+
+        return (bool)$statement->fetchColumn();
+    }
+
+    protected function tableHasRows(string $tableName): bool
+    {
+        if (!$this->tableExists($tableName)) {
+            return false;
+        }
+
+        $statement = $this->query(sprintf('SELECT COUNT(*) FROM `%s`', str_replace('`', '``', $tableName)));
+
+        return (int)$statement->fetchColumn() > 0;
+    }
+
+    protected function settingExists(string $item): bool
+    {
+        $tableName = $this->prefixedTable('settings');
+
+        if (!$this->tableExists($tableName)) {
+            return false;
+        }
+
+        $fetch = $this->query(
+            sprintf('SELECT 1 FROM `%s` WHERE item = ', str_replace('`', '``', $tableName)).$this->quote($item).' LIMIT 1',
+            static::FETCH_NUM
+        );
 
         return $fetch->fetch() !== false;
     }
@@ -72,12 +144,18 @@ class SetupPDO extends PDO
     {
         $installedVersion = $this->query('select version()')->fetchColumn();
 
-        if (!(strpos($installedVersion, 'MariaDB') === false)) {
+        if (stripos($installedVersion, 'MariaDB') !== false) {
+            if (preg_match('/(\d+\.\d+)/', $installedVersion, $matches)) {
+                return version_compare($matches[1], TI_MARIADB_VERSION, '>=');
+            }
+
             return true;
         }
 
-        $installedVersion = substr($installedVersion, 0, 6);
+        if (preg_match('/(\d+\.\d+)/', $installedVersion, $matches)) {
+            return version_compare($matches[1], TI_MYSQL_VERSION, '>=');
+        }
 
-        return version_compare($installedVersion, TI_MYSQL_VERSION, '>=');
+        return version_compare(substr($installedVersion, 0, 6), TI_MYSQL_VERSION, '>=');
     }
 }

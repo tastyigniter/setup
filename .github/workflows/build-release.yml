@@ -1,0 +1,48 @@
+name: Build release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build setup wizard ZIP
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: setup/assets/package-lock.json
+
+      - name: Install and build frontend assets
+        working-directory: setup/assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create release archive
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
+          ARCHIVE="tastyigniter-setup-${VERSION}.zip"
+          zip -r "$ARCHIVE" setup.php setup LICENSE.txt README.md \
+            -x "**/node_modules/*" "**/src/*" "**/temp/*" "**/setup_config" "**/setup.log"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Upload release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: tastyigniter-setup-*.zip
+          generate_release_notes: true

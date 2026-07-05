@@ -1,0 +1,316 @@
+@import "tailwindcss";
+
+@source "../../../partials/**/*.php";
+@source "../../../../setup.php";
+@source "../js/**/*.js";
+
+@theme {
+    --color-brand: #ff4900;
+    --color-brand-dark: #e04100;
+    --color-surface: #ffffff;
+    --color-muted: #64748b;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    html {
+        @apply antialiased h-full;
+    }
+
+    body {
+        @apply bg-slate-50 text-slate-900 font-sans m-0 h-full overflow-hidden;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@layer components {
+    .setup-shell {
+        @apply h-screen w-full flex flex-col overflow-hidden lg:grid lg:grid-cols-[18rem_1fr] xl:grid-cols-[20rem_1fr];
+    }
+
+    .setup-sidebar {
+        @apply shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 w-full p-6 lg:p-8 flex flex-col gap-8 lg:h-full lg:min-h-0 lg:overflow-hidden;
+    }
+
+    .setup-main {
+        @apply flex-1 min-h-0 overflow-y-auto overscroll-contain flex justify-center items-start p-6 lg:p-10 xl:p-12;
+    }
+
+    .setup-main-inner {
+        @apply w-full max-w-2xl;
+    }
+
+    .setup-toast-container {
+        @apply fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none w-[calc(100%-2rem)] max-w-sm;
+    }
+
+    .setup-toast {
+        @apply pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm;
+    }
+
+    .setup-toast-error {
+        @apply border-red-200 bg-red-50/95 text-red-800;
+    }
+
+    .setup-toast-content {
+        @apply flex flex-1 items-start gap-2.5 min-w-0;
+    }
+
+    .setup-toast-icon {
+        @apply shrink-0 mt-0.5;
+    }
+
+    .setup-toast-message {
+        @apply text-sm leading-relaxed;
+    }
+
+    .setup-toast-dismiss {
+        @apply shrink-0 rounded-lg p-1 text-current/60 hover:text-current hover:bg-black/5 transition-colors cursor-pointer;
+    }
+
+    .setup-form {
+        @apply w-full;
+    }
+
+    .setup-card {
+        @apply bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8 w-full;
+    }
+
+    .setup-panel {
+        @apply rounded-xl border border-slate-200 bg-slate-50 p-5;
+    }
+
+    .setup-input {
+        @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-brand focus:ring-4 focus:ring-brand/15;
+    }
+
+    .setup-label {
+        @apply block text-sm font-medium text-slate-700 mb-1.5;
+    }
+
+    .setup-btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
+    }
+
+    .setup-btn-primary {
+        @apply bg-brand text-white hover:bg-brand-dark hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/20;
+    }
+
+    .setup-btn-secondary {
+        @apply bg-slate-100 text-slate-700 hover:bg-slate-200;
+    }
+
+    .setup-modal {
+        @apply fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6;
+    }
+
+    .setup-modal-backdrop {
+        @apply absolute inset-0 bg-slate-900/50 backdrop-blur-sm;
+    }
+
+    .setup-modal-panel {
+        @apply relative z-10 flex w-full max-w-2xl max-h-[min(85vh,720px)] flex-col rounded-2xl border border-slate-200 bg-white shadow-xl;
+    }
+
+    .setup-modal-header {
+        @apply flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5;
+    }
+
+    .setup-modal-title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .setup-modal-close {
+        @apply shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer;
+    }
+
+    .setup-modal-body {
+        @apply flex-1 overflow-y-auto px-6 py-5;
+    }
+
+    .setup-modal-license {
+        @apply whitespace-pre-wrap text-sm leading-relaxed text-slate-600 font-sans;
+    }
+
+    .setup-modal-footer {
+        @apply flex justify-end border-t border-slate-200 px-6 py-4;
+    }
+
+    .step-item {
+        @apply flex items-start gap-3;
+    }
+
+    .step-dot {
+        @apply mt-1.5 h-3 w-3 rounded-full border-2 border-slate-300 bg-white transition-all duration-300 shrink-0;
+    }
+
+    .step-item.active .step-dot {
+        @apply border-brand bg-brand scale-125 shadow-[0_0_0_4px_rgba(255,73,0,0.15)];
+    }
+
+    .step-item.complete .step-dot {
+        @apply border-emerald-500 bg-emerald-500;
+    }
+
+    .requirement-list {
+        @apply rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm;
+    }
+
+    .requirement-list-header {
+        @apply px-5 py-4 border-b border-slate-200 bg-white;
+    }
+
+    .requirement-progress-label {
+        @apply text-xs font-medium text-slate-500 tabular-nums;
+    }
+
+    .requirement-progress-track {
+        @apply h-1.5 rounded-full bg-slate-200 mt-3 overflow-hidden;
+    }
+
+    .requirement-progress-fill {
+        @apply h-full rounded-full bg-brand transition-all duration-500 ease-out;
+    }
+
+    .requirement-progress-fill.is-pass {
+        @apply bg-emerald-500;
+    }
+
+    .requirement-progress-fill.is-fail {
+        @apply bg-red-500;
+    }
+
+    .requirement-list-body {
+        @apply divide-y divide-slate-100 bg-white;
+    }
+
+    .requirement-row {
+        @apply flex items-center gap-4 px-5 py-4 transition-all duration-300 bg-white;
+    }
+
+    .requirement-row.checking {
+        @apply bg-slate-50/80;
+    }
+
+    .requirement-icon {
+        @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500;
+    }
+
+    .requirement-content {
+        @apply flex-1 min-w-0;
+    }
+
+    .requirement-label {
+        @apply text-sm font-semibold text-slate-800;
+    }
+
+    .requirement-hint {
+        @apply text-xs text-slate-500 mt-1 leading-relaxed;
+    }
+
+    .requirement-badge {
+        @apply inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .requirement-status {
+        @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white transition-all duration-300;
+    }
+
+    .requirement-status-dot {
+        @apply h-2 w-2 rounded-full bg-slate-300 transition-all duration-300;
+    }
+
+    .requirement-row.checking .requirement-status-dot {
+        @apply bg-slate-400 animate-pulse;
+    }
+
+    .requirement-row .hint-links a {
+        @apply text-brand underline underline-offset-2 hover:text-brand-dark;
+    }
+
+    .requirement-alert {
+        @apply rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700;
+    }
+
+    .timeline-row {
+        @apply flex items-center gap-4 rounded-xl border border-slate-200 px-4 py-3 transition-all duration-300;
+    }
+
+    .timeline-row.active {
+        @apply border-brand/30 bg-orange-50;
+    }
+
+    .timeline-row.done {
+        @apply border-emerald-200 bg-emerald-50;
+    }
+
+    .progress-track {
+        @apply h-2 rounded-full bg-slate-200 overflow-hidden;
+    }
+
+    .progress-fill {
+        @apply h-full rounded-full bg-brand transition-all duration-500 ease-out;
+    }
+
+    .progress-shimmer {
+        background: linear-gradient(90deg, #ff4900 0%, #ff7a45 50%, #ff4900 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite linear;
+    }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(1rem); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+    from { opacity: 0; transform: translateY(1.25rem); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes bounce-in {
+    0% { transform: scale(0.85); opacity: 0; }
+    60% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.animate-fade-in { animation: fade-in 0.4s ease-out both; }
+.animate-slide-up { animation: slide-up 0.35s ease-out both; }
+.animate-shake { animation: shake 0.35s ease-in-out; }
+.animate-bounce-in { animation: bounce-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(calc(100% + 1rem)); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(calc(100% + 1rem)); }
+}
+
+.animate-toast-in { animation: toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both; }
+.animate-toast-out { animation: toast-out 0.2s ease-in both; }

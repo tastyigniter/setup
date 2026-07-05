@@ -1,47 +1,30 @@
-<h2 class="mb-3"><?= lang('text_complete_heading'); ?></h2>
-<p class="lead mb-4"><?= lang('text_complete_sub_heading'); ?></p>
+<div>
+    <h1 class="text-2xl font-bold text-slate-900"><?= lang('text_install_heading'); ?></h1>
+    <p class="mt-2 text-slate-600"><?= lang('text_install_sub_heading'); ?></p>
 
-<div data-html="install-type">
-    <div class="row text-center">
-        <div class="col-md-6">
-            <div class="card card-body shadow">
-                <p>Without any extensions or theme, you can install them later.</p>
-                <button
-                    class="btn btn-outline-dark"
-                    data-install-control="install-fresh"
-                ><?= lang('button_clean_install') ?></button>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card card-body shadow">
-                <p>With a pre-built theme and some recommended extensions.</p>
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    data-install-control="install-prebuilt"
-                    data-theme-code="tastyigniter-orange"
-                ><?= lang('button_choose_theme') ?></button>
-            </div>
-        </div>
+    <div class="mt-6 progress-track">
+        <div class="progress-fill progress-shimmer" data-download-progress style="width: 0%"></div>
     </div>
 
-    <div data-html="existing-database" class="row d-none">
-        <div class="col-12">
-            <div class="alert alert-info mt-5" role="alert">
-                <h4 class="alert-heading">Existing database records found!</h4>
-                <hr>
-                <p class="mb-0">
-                    An older version of TastyIgniter was found in the specified database. <br>
-                    By proceeding, your existing database will be updated.
-                </p>
+    <div class="mt-8 space-y-3">
+        <?php
+        $steps = [
+            'prepare' => lang('install_prepare'),
+            'download' => lang('install_download'),
+            'extract' => lang('install_extract'),
+            'config' => lang('install_config'),
+            'install' => lang('install_migrate'),
+            'finalize' => lang('install_finalize'),
+        ];
+        foreach ($steps as $process => $label) { ?>
+            <div class="timeline-row" data-timeline="<?= $process ?>">
+                <div data-timeline-icon class="shrink-0">
+                    <span class="inline-block h-3 w-3 rounded-full bg-slate-300"></span>
+                </div>
+                <p class="text-sm text-slate-700" data-timeline-label><?= $label ?></p>
             </div>
-        </div>
+        <?php } ?>
     </div>
-</div>
 
-<div class="row" data-html="themes">
-    <div class="install-progress p-4 text-center mx-auto" style="display: none;">
-        <i class="fa fa-spinner fa-3x fa-spin"></i>
-        <p class="message">Fetching themes...</p>
-    </div>
+    <div id="install-error" class="hidden"></div>
 </div>
