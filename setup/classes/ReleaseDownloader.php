@@ -263,7 +263,7 @@ class ReleaseDownloader
         }
 
         throw new SetupException(sprintf(
-            'Pre-vendored release asset not found for %s. Please try again later.',
+            'Distribution release with bundled dependencies not found for %s. Please try again later.',
             $tag
         ));
     }
