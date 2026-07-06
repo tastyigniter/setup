@@ -1,4 +1,7 @@
 .DS_Store
 .idea
+.ddev
 setup/assets/node_modules
-setup/assets/package-lock.json
+setup/temp
+setup/setup_config
+setup/setup.log

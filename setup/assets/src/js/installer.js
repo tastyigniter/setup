@@ -1,416 +1,385 @@
-var Installer = {
+import { clearToast, showToast } from './toast.js';
 
-    currentStep: null,
-
-    options: {
-        page: "#page",
-        form: "#setup-form",
-        currentStepSelector: "#current-step",
-        submitButton: "button[type=\"submit\"]",
-        progressBox: "#progress-box",
-        flashMessageSelector: "#flash-message"
-    },
+const Installer = {
+    wizard: null,
+    currentStep: 'start',
 
     Steps: {
-        start: {handler: "onLoadLicence"},
-        license: {handler: "onCompleteRequirements"},
-        requirements: {handler: "onCheckRequirements"},
-        database: {handler: "onCheckDatabase"},
-        settings: {handler: "onValidateSettings"},
+        start: { handler: 'onAcceptLicense' },
+        database: { handler: 'onValidateDatabase' },
         install: {
-            dataCache: {},
-            handler: "onInstall",
-            steps: {
-                download: {
-                    msg: "Downloading {{name}} {{type}}...",
-                    error: "Downloading {{name}} {{type}} failed. See setup log."
-                },
-                extract: {
-                    msg: "Extracting {{name}} {{type}}...",
-                    error: "Extracting {{name}} {{type}} failed. See setup log."
-                },
-                config: {
-                    msg: "Writing site configuration files...",
-                    error: "Writing site configuration files failed. See setup log."
-                },
-                install: {
-                    msg: "Finishing site setup...",
-                    error: "Finishing site setup failed. See setup log."
-                }
-            }
+            handler: 'onInstall',
+            steps: [
+                { process: 'prepare', labelKey: 'install_prepare' },
+                { process: 'download', labelKey: 'install_download' },
+                { process: 'extract', labelKey: 'install_extract' },
+                { process: 'config', labelKey: 'install_config' },
+                { process: 'install', labelKey: 'install_migrate' },
+                { process: 'finalize', labelKey: 'install_finalize' },
+            ],
         },
-        proceed: {proceedUrl: '/admin/settings', frontUrl: '/'},
-        success: {}
+        complete: {},
     },
 
-    init: function () {
-        Installer.$page = $(Installer.options.page)
-        Installer.$pageContent = Installer.$page.find('[data-html="content"]')
-        Installer.$pageModal = Installer.$page.find('[data-html="modal"]')
-        Installer.$progressBox = $(Installer.options.progressBox)
-        Installer.currentStep = $(Installer.options.currentStepSelector).val()
-        Installer.$form = $(Installer.options.form)
+    init(wizard) {
+        this.wizard = wizard;
+        this.currentStep = document.getElementById('current-step')?.value || 'start';
+        this.$content = document.querySelector('[data-html="content"]');
+        this.$form = document.getElementById('setup-form');
 
-        // render
-        Installer.updateWizard(Installer.currentStep)
-        Installer.renderView(Installer.currentStep)
+        this.renderView(this.currentStep);
+        this.updateSidebar(this.currentStep);
+        document.body.dataset.step = this.currentStep;
 
-        $(document).ready(function () {
-            Installer.$submitBtn = $(Installer.options.submitButton)
-            Installer.$form.submit(Installer.submitForm)
-            Installer.$page.on('click', '[data-install-control]', Installer.onControlClick)
-            Installer.$pageModal.on('hidden.bs.modal', Installer.onModalHidden)
-        })
-    },
+        this.$form?.addEventListener('submit', (event) => this.submitForm(event));
+        document.addEventListener('click', (event) => this.onControlClick(event));
 
-    submitForm: function (e) {
-        e.preventDefault()
-        if (!Installer.$submitBtn.hasClass('disabled')) {
-            Installer.currentStep = $(Installer.options.currentStepSelector).val()
-            Installer.processForm()
+        if (this.currentStep === 'start') {
+            this.checkRequirements();
         }
     },
 
-    onControlClick: function (event) {
-        var $button = $(event.currentTarget),
-            control = $button.data('installControl')
+    async submitForm(event) {
+        event.preventDefault();
+        if (this.wizard.loading) return;
+
+        const handler = this.Steps[this.currentStep]?.handler;
+        if (!handler) return;
+
+        if (this.currentStep === 'database') {
+            await this.runHandler(handler);
+            return;
+        }
+
+        if (this.currentStep === 'start') {
+            await this.runHandler(handler);
+        }
+    },
+
+    onControlClick(event) {
+        const button = event.target.closest('[data-install-control]');
+        if (!button) return;
+
+        event.preventDefault();
+        const control = button.dataset.installControl;
 
         switch (control) {
             case 'retry-check':
-                Installer.checkRetry()
-                break
-            case 'load-license':
-                Installer.processResponse({step: 'license'})
-                break
-            case 'accept-license':
-                Installer.processResponse({step: 'requirements'})
-                break
-            case 'complete-requirements':
-                Installer.sendRequest('onCompleteRequirements', {}).done(function (json) {
-                    Installer.processResponse(json)
-                })
-                break
-            case 'install-fresh':
-            case 'install-prebuilt':
-                Installer.processInstall($button, control)
-                break
+                this.checkRequirements();
+                break;
+            case 'retry-install':
+                this.startInstall();
+                break;
+            case 'start-install':
+                this.startInstall();
+                break;
         }
     },
 
-    onModalHidden: function (event) {
-        var $modal = $(event.currentTarget)
-        $modal.find('.modal-dialog').remove()
+    async runHandler(handler, extra = {}) {
+        this.setLoading(true);
+        this.clearError();
+
+        try {
+            const json = await this.sendRequest(handler, extra);
+            await this.processResponse(json);
+        } catch (error) {
+            this.showError(error.message);
+        } finally {
+            this.setLoading(false);
+        }
     },
 
-    disableSubmitButton: function (disabled) {
-        if (Installer.$submitBtn && Installer.$submitBtn.length) {
+    async sendRequest(handler, data = {}) {
+        const formData = new FormData(this.$form);
+        formData.set('handler', handler);
 
-            Installer.$submitBtn.prop("disabled", disabled)
-            if (disabled) {
-                Installer.$submitBtn.addClass("disabled")
-            } else {
-                Installer.$submitBtn.removeClass("disabled")
+        Object.entries(data).forEach(([key, value]) => {
+            formData.set(key, value);
+        });
+
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+        });
+
+        const text = await response.text();
+
+        if (!response.ok) {
+            throw new Error(text || 'Request failed');
+        }
+
+        return JSON.parse(text);
+    },
+
+    async processResponse(json) {
+        if (json.step === 'install') {
+            this.goToStep('install');
+            await this.startInstall();
+            return;
+        }
+
+        if (json.step) {
+            this.goToStep(json.step);
+        }
+    },
+
+    goToStep(step) {
+        this.currentStep = step;
+        this.wizard.setStep(step);
+        this.renderView(step);
+
+        if (step === 'start') {
+            this.checkRequirements();
+        }
+    },
+
+    renderView(step) {
+        const template = document.querySelector(`[data-partial="${step}"]`);
+        if (!template || !this.$content) return;
+
+        this.$content.innerHTML = template.innerHTML;
+        this.$content.classList.remove('animate-slide-up');
+        void this.$content.offsetWidth;
+        this.$content.classList.add('animate-slide-up');
+
+        if (window.Alpine) {
+            window.Alpine.initTree(this.$content);
+        }
+    },
+
+    updateSidebar(step) {
+        const order = ['start', 'database', 'install', 'complete'];
+        const currentIndex = order.indexOf(step);
+
+        document.querySelectorAll('[data-sidebar-step]').forEach((item) => {
+            const itemStep = item.dataset.sidebarStep;
+            const itemIndex = order.indexOf(itemStep);
+
+            item.classList.remove('active', 'complete');
+            if (itemIndex < currentIndex) item.classList.add('complete');
+            if (itemStep === step) item.classList.add('active');
+        });
+
+        const progress = document.querySelector('[data-progress-fill]');
+        if (progress) {
+            const percent = currentIndex <= 0 ? 0 : (currentIndex / (order.length - 1)) * 100;
+            progress.style.width = `${percent}%`;
+        }
+    },
+
+    async checkRequirements() {
+        const rows = document.querySelectorAll('[data-requirement]');
+        const resultBox = document.getElementById('requirement-check-result');
+        const continueBtn = document.getElementById('continue-btn');
+        const progressFill = document.querySelector('[data-requirement-progress-fill]');
+        const progressLabel = document.querySelector('[data-requirement-progress]');
+        let blockingFailed = false;
+        let passedCount = 0;
+        const total = rows.length;
+
+        if (resultBox) {
+            resultBox.innerHTML = '';
+            resultBox.classList.add('hidden');
+        }
+
+        if (progressLabel) {
+            progressLabel.textContent = 'Checking…';
+            progressLabel.classList.remove('text-slate-700', 'font-semibold');
+        }
+        if (progressFill) {
+            progressFill.style.width = '0%';
+            progressFill.classList.remove('is-pass', 'is-fail');
+        }
+
+        for (const [index, row] of [...rows].entries()) {
+            row.style.animationDelay = `${index * 40}ms`;
+            row.classList.add('animate-slide-up');
+            row.classList.remove('pass', 'fail', 'warn', 'checking');
+
+            const icon = row.querySelector('[data-status-icon]');
+            if (icon) {
+                icon.innerHTML = '<span class="requirement-status-dot"></span>';
+            }
+
+            row.classList.add('checking');
+
+            const code = row.dataset.requirement;
+
+            try {
+                const json = await this.sendRequest('onCheckRequirements', { code });
+                const passed = !!json.result;
+                const blocking = json.blocking !== false;
+
+                row.classList.remove('checking');
+
+                if (passed) {
+                    row.classList.add('pass');
+                    passedCount++;
+                } else if (!blocking) {
+                    row.classList.add('warn');
+                } else {
+                    row.classList.add('fail');
+                }
+
+                if (icon) {
+                    icon.innerHTML = passed
+                        ? '<svg class="h-5 w-5 text-emerald-600 animate-bounce-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
+                        : !blocking
+                            ? '<svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                            : '<svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>';
+                }
+
+                if (!passed && blocking) {
+                    blockingFailed = true;
+                }
+            } catch (error) {
+                row.classList.remove('checking');
+                row.classList.add('fail');
+                blockingFailed = true;
+                if (icon) {
+                    icon.innerHTML = '<svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>';
+                }
+            }
+
+            if (progressFill) {
+                progressFill.style.width = `${((index + 1) / total) * 100}%`;
+            }
+
+            if (progressLabel) {
+                progressLabel.textContent = `${passedCount} of ${total} passed`;
             }
         }
-    },
 
-    getHandler: function (currentStep) {
-        var step = Installer.Steps[currentStep]
+        if (continueBtn) {
+            continueBtn.disabled = blockingFailed;
+            continueBtn.classList.toggle('opacity-50', blockingFailed);
+            continueBtn.classList.toggle('cursor-not-allowed', blockingFailed);
+        }
 
-        return step.handler
-    },
+        if (progressFill) {
+            progressFill.classList.remove('is-pass', 'is-fail');
+            progressFill.classList.add(passedCount === total ? 'is-pass' : 'is-fail');
+        }
 
-    processForm: function () {
-        if (Installer.$form.length) {
-            var progressMessage = Installer.getAlert(Installer.currentStep),
-                requestHandler = Installer.getHandler(Installer.currentStep)
-
-            Installer.sendRequest(requestHandler, {}, progressMessage).done(function (json) {
-                Installer.processResponse(json)
-            })
+        if (blockingFailed && resultBox) {
+            resultBox.innerHTML = `<div class="mt-4 requirement-alert animate-slide-up">${window.setupLang.alert_requirement_error} <a href="${window.setupLang.docs_troubleshooting}" class="font-medium underline underline-offset-2" target="_blank" rel="noopener">${window.setupLang.text_docs_link}</a></div>`;
+            resultBox.classList.remove('hidden');
+        } else if (progressLabel) {
+            progressLabel.textContent = blockingFailed ? `${passedCount} of ${total} passed` : 'All checks passed';
+            progressLabel.classList.toggle('text-slate-700', !blockingFailed);
+            progressLabel.classList.toggle('font-semibold', !blockingFailed);
         }
     },
 
-    sendRequest: function (handler, data, message) {
-        data.handler = handler
-        var postData = (typeof Installer.$form !== "undefined")
-            ? Installer.$form.serialize() + (typeof data === "undefined" ? ""
-            : "&" + $.param(data)) : []
+    async startInstall() {
+        this.renderView('install');
+        this.goToStep('install');
 
-        Installer.disableSubmitButton(true)
+        const steps = this.Steps.install.steps;
+        let downloadOffset = 0;
+        let success = true;
 
-        return $.ajax({
-            async: true,
-            type: "POST",
-            cache: true,
-            data: postData,
-        }).done(function () {
-            Installer.disableSubmitButton(false)
-        }).fail(function (xhr) {
-            Installer.disableSubmitButton(false)
-            Installer.flashMessage("danger", xhr.responseText)
-        })
-    },
+        for (const [index, step] of steps.entries()) {
+            const row = document.querySelector(`[data-timeline="${step.process}"]`);
+            row?.classList.add('active');
 
-    getAlert: function (step) {
-        if (Installer.Steps.hasOwnProperty(step))
-            return Installer.Steps[step].msg
-    },
+            const label = row?.querySelector('[data-timeline-label]');
+            if (label) label.classList.add('font-semibold', 'text-brand');
 
-    checkRetry: function () {
-        Installer.checkRequirements()
-    },
+            try {
+                if (step.process === 'download') {
+                    let complete = false;
+                    while (!complete) {
+                        const json = await this.sendRequest('onInstall', {
+                            process: 'download',
+                            offset: downloadOffset,
+                        });
 
-    updateWizard: function (step) {
-        var steps = [
-            "license",
-            "requirements",
-            "database",
-            "settings",
-            "install",
-            "proceed"
-        ]
+                        complete = json.result?.complete ?? true;
+                        downloadOffset = json.result?.downloaded ?? 0;
 
-        $(Installer.options.currentStepSelector).val(step);
-        $('body').attr('class', step);
-        Installer.currentStep = step;
-        //
-        // for (var index in steps) {
-        //     var $step = Installer.$page.find('[data-wizard="' + steps[index] + '"]')
-        //     $step.removeClass('in-progress').addClass('complete')
-        //
-        //     if (steps[index] === step) {
-        //         $step.addClass('in-progress')
-        //         break
-        //     }
-        // }
-    },
-
-    checkRequirements: function () {
-        var $requirements = Installer.$page.find('[data-requirement]'),
-            $checkResult = $('#requirement-check-result').empty(),
-            failedAlertTemplate = $('[data-partial="_alert_check_failed"]').clone().html(),
-            completeAlertTemplate = $('[data-partial="_alert_check_complete"]').clone().html(),
-            requestHandler = Installer.Steps.requirements.handler,
-            requestChain = [],
-            failCodes = [],
-            failMessages = [],
-            success = true
-
-        $.each($requirements, function (index, requirement) {
-
-            var $requirement = $(requirement),
-                data = $requirement.data(),
-                timeout = 1500
-
-            requestChain.push(function () {
-                var deferred = $.Deferred(),
-                    $requirementStatus = $requirement.find('[role="status"]')
-
-                $requirement.addClass('pulse')
-                $requirement.find('[data-label]').removeClass('text-muted')
-                $requirement.find('[data-spinner]')
-                    .removeClass('fas fa-circle text-muted')
-                    .addClass('spinner-grow spinner-grow-sm')
-
-                Installer.sendRequest(requestHandler, {
-                    code: data.requirement
-                }).done(function (json) {
-                    setTimeout(function () {
-                        if (json.result) {
-                            $requirement.addClass('done')
-                            $requirementStatus.addClass('fas fa-circle text-success').removeClass('spinner-grow')
-                            deferred.resolve()
-                        } else {
-                            success = false
-                            $requirement.addClass('failed')
-                            $requirementStatus.addClass('fas fa-circle text-danger').removeClass('spinner-grow')
-                            $requirementStatus.attr('title', data.hint)
-                            failCodes.push(data.requirement)
-                            failMessages.push(data.hint)
-                            deferred.resolve()
+                        const bar = document.querySelector('[data-download-progress]');
+                        if (bar && json.result?.total) {
+                            bar.style.width = `${Math.min(100, (json.result.downloaded / json.result.total) * 100)}%`;
                         }
-                        deferred.resolve()
-                    }, timeout)
-                }).fail(function () {
-                    setTimeout(function () {
-                        success = false
-                        failCodes.push(data.requirement)
-                        failMessages.push(data.hint)
-                        $requirement.addClass('failed')
-                        $requirementStatus.attr('title', data.hint)
-                        deferred.resolve()
-                    }, timeout)
-                })
-
-                return deferred
-            })
-        })
-
-        $.waterfall.apply(this, requestChain).always(function () {
-        }).done(function (arr) {
-            if (!success) {
-                $checkResult.append(Mustache.render(failedAlertTemplate, {
-                    code: failCodes.join(', '),
-                    message: failMessages.join('<br> ')
-                }))
-                $checkResult.show().addClass('animated fadeIn')
-            } else {
-                Installer.$form.append('<input type="hidden" name="requirement" value="complete">')
-                $checkResult.append(Mustache.render(completeAlertTemplate))
-                $checkResult.show().addClass('animated fadeIn')
-            }
-        })
-    },
-
-    processInstallSteps: function (steps) {
-        var success = true,
-            requestChain = [],
-            failMessages = [],
-            proceedUrl = null,
-            $progressMessage = Installer.$pageContent.find('.install-progress .message')
-
-        $.each(steps, function (index, stepItems) {
-
-            var step = Installer.Steps.install.steps[index]
-
-            $.each(stepItems, function (itemIndex, item) {
-                var timeout = 500
-
-                requestChain.push(function () {
-                    var postData,
-                        deferred = $.Deferred(),
-                        beforeSendMessage = Mustache.render(step.msg, item)
-
-                    postData = {
-                        process: item.process,
-                        disableLog: true,
-                        item: item
                     }
+                } else {
+                    const json = await this.sendRequest('onInstall', { process: step.process });
 
-                    $progressMessage.text(beforeSendMessage)
+                    if (step.process === 'finalize') {
+                        window.installResult = json.result;
+                    }
+                }
 
-                    Installer.sendRequest('onInstall', postData, beforeSendMessage)
-                        .done(function (json) {
-                            setTimeout(function () {
-                                if (json.result) {
-                                    if (index === "install") proceedUrl = json.result
-                                    deferred.resolve()
-                                } else {
-                                    success = false
-                                    var errorMessage = Mustache.render(step.error, item)
-                                    $progressMessage.text(errorMessage)
-                                    failMessages.push(errorMessage)
-                                    deferred.resolve()
-                                }
-                                deferred.resolve()
-                            }, timeout)
-                        })
-                        .fail(function () {
-                            setTimeout(function () {
-                                success = false
-                                deferred.resolve()
-                            }, timeout)
-                        })
-
-                    return deferred
-                })
-            })
-        })
-
-        $.waterfall.apply(this, requestChain).done(function () {
-            if (!success) {
-                Installer.$pageContent.html($('[data-partial="_alert__alert_install_failed"]').html())
-                $('.install_failed .message').text(failMessages.join('<br />'))
-            } else {
-                Installer.updateWizard('proceed')
-                Installer.renderView('proceed', {proceedUrl: proceedUrl ? proceedUrl : '/admin/login', frontUrl: '/'})
+                row?.classList.remove('active');
+                row?.classList.add('done');
+                row?.querySelector('[data-timeline-icon]')?.replaceChildren(this.iconCheck());
+            } catch (error) {
+                success = false;
+                row?.classList.remove('active');
+                row?.classList.add('fail');
+                this.showInstallError(error.message);
+                break;
             }
-        })
-    },
-
-    renderView: function (name, data) {
-        var pageData = Installer.Steps[name],
-            view = pageData.view
-
-        if (!pageData)
-            pageData = {}
-
-        if (name) {
-            var viewHtml = Mustache.render($(view).html(), $.extend(pageData, data, {}))
-            Installer.$pageContent.html(viewHtml)
         }
 
-        if (Installer.currentStep === 'requirements') {
-            Installer.checkRequirements()
+        if (success) {
+            setTimeout(() => {
+                this.goToStep('complete');
+                this.applyInstallUrls(window.installResult);
+            }, 400);
         }
     },
 
-    flashMessage: function (type, message) {
-        if (!message)
-            return
-
-        var $flashMessage = $(Installer.options.flashMessageSelector),
-            $alert = $('<div />', {
-                class: 'animated bounceIn shadow alert alert-' + type+' alert-dismissible'
-            })
-
-        $flashMessage.empty()
-
-        $flashMessage.addClass('show')
-        $alert.append(message)
-        $alert.append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"></button>')
-        $flashMessage.append($alert)
-
-        if (type !== 'danger')
-            $alert.delay(5000).fadeOut(400, function () {
-                $(this).remove()
-            })
+    applyInstallUrls(result) {
+        if (!result) return;
+        const admin = document.querySelector('[data-admin-url]');
+        const front = document.querySelector('[data-front-url]');
+        if (admin && result.adminUrl) admin.href = result.adminUrl;
+        if (front && result.frontUrl) front.href = result.frontUrl;
     },
 
-    processResponse: function (json) {
-        var flashMessage = json.flash,
-            settingsInstalled = json.settingsInstalled,
-            nextStep = json.step
+    showInstallError(message) {
+        const box = document.getElementById('install-error');
+        if (!box) return;
 
-        if (flashMessage) {
-            Installer.flashMessage(flashMessage.type, flashMessage.message)
-        }
-
-        switch (nextStep) {
-            case 'license':
-            case 'requirements':
-            case 'database':
-            case 'settings':
-            case 'install':
-                Installer.updateWizard(nextStep)
-                Installer.renderView(nextStep)
-
-                if (settingsInstalled)
-                    Installer.$pageContent.find('[data-html="existing-database"]').removeClass('d-none')
-
-                break
-        }
+        box.innerHTML = `
+            <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 animate-slide-up">
+                <p class="font-semibold">${window.setupLang.alert_install_failed}</p>
+                <p class="mt-2">${message}</p>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <button type="button" data-install-control="retry-install" class="setup-btn setup-btn-primary">${window.setupLang.button_retry}</button>
+                    <a href="${window.setupLang.docs_troubleshooting}" target="_blank" rel="noopener" class="setup-btn setup-btn-secondary">${window.setupLang.text_docs_link}</a>
+                </div>
+            </div>`;
+        box.classList.remove('hidden');
     },
 
-    processInstall: function ($btn, control) {
-        var installData = {
-            themeCode: $btn.data('themeCode'),
-            process: 'apply',
-            disableLog: true
-        }
-
-        $btn.attr('disabled', true)
-
-        Installer.$pageContent.html($('[data-partial="_alert_install_progress"]').html())
-
-        Installer.sendRequest('onInstall', installData).done(function (json) {
-            Installer.processInstallSteps(json.result)
-        }).fail(function () {
-                Installer.$pageContent.html($('[data-partial="install"]').html())
-            })
-            .always(function () {
-                $btn.attr('disabled', false)
-            })
+    iconCheck() {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'h-5 w-5 text-emerald-500 animate-bounce-in');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+        return svg;
     },
-}
+
+    setLoading(loading) {
+        this.wizard.loading = loading;
+        document.querySelectorAll('[data-loading-target]').forEach((el) => {
+            el.classList.toggle('opacity-60', loading);
+        });
+    },
+
+    showError(message) {
+        showToast(message, 'error');
+    },
+
+    clearError() {
+        clearToast();
+    },
+};
+
+export { Installer };

@@ -1,47 +1,45 @@
 <?php
 
-// Constants
-define('TI_PHP_VERSION', '7.4');
-define('TI_MYSQL_VERSION', '5.7');
+define('TI_PHP_VERSION', '8.3');
+define('TI_MYSQL_VERSION', '8.0');
+define('TI_MARIADB_VERSION', '10.6');
 define('SETUPPATH', __DIR__);
 define('BASEPATH', dirname(SETUPPATH));
 define('PARTIALPATH', SETUPPATH.'/partials/');
+define('DOCS_INSTALLATION_URL', 'https://tastyigniter.com/docs/installation');
+define('DOCS_TROUBLESHOOTING_URL', DOCS_INSTALLATION_URL.'#troubleshooting');
+define('DOCS_POST_INSTALL_URL', DOCS_INSTALLATION_URL.'#post-installation-steps');
+define('DOCS_WIZARD_URL', DOCS_INSTALLATION_URL.'#setup-wizard-installation');
 
-/*
- * Check PHP version
- */
-if (version_compare(PHP_VERSION, TI_PHP_VERSION, '<')) exit('You need at least PHP '.TI_PHP_VERSION.' to install TastyIgniter using this setup wizard.');
+if (version_compare(PHP_VERSION, TI_PHP_VERSION, '<')) {
+    exit('You need at least PHP '.TI_PHP_VERSION.' to install TastyIgniter using this setup wizard.');
+}
 
-// PHP headers
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
-// Session
 session_start();
 
-// Debug mode
 $isDebug = array_key_exists('debug', $_REQUEST);
 if ($isDebug) {
     define('ENVIRONMENT', 'development');
-    ini_set('display_errors', 1);
+    ini_set('display_errors', '1');
     error_reporting(-1);
-}
-else {
+} else {
     define('ENVIRONMENT', 'production');
-    ini_set('display_errors', 0);
+    ini_set('display_errors', '0');
     error_reporting(0);
 }
 
-// Exception handler
 register_shutdown_function('installerShutdown');
 function installerShutdown()
 {
     global $setup;
     $error = error_get_last();
-    if (isset($error['type']) && $error['type'] == 1) {
+    if (isset($error['type']) && $error['type'] === 1) {
         header('HTTP/1.1 500 Internal Server Error');
         $errorMsg = htmlspecialchars_decode(strip_tags($error['message']));
         echo $errorMsg;
@@ -56,6 +54,10 @@ require_once 'language/en/default.php';
 require_once 'classes/SetupPDO.php';
 require_once 'classes/SetupException.php';
 require_once 'classes/SetupRepository.php';
+require_once 'classes/RequirementChecker.php';
+require_once 'classes/ReleaseDownloader.php';
+require_once 'classes/EnvWriter.php';
+require_once 'classes/ArtisanRunner.php';
 require_once 'classes/SetupController.php';
 
 try {
@@ -69,7 +71,6 @@ try {
     $setup->writeLog('Max execution time: %s', ini_get('max_execution_time'));
 
     $page = $setup->getPage();
-}
-catch (Exception $ex) {
+} catch (Exception $ex) {
     $fatalError = $ex->getMessage();
 }

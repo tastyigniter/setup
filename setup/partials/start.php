@@ -1,30 +1,82 @@
-<div class="position-relative w-50 mx-auto">
-    <svg
-        class="position-absolute"
-        version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-        viewBox="0 0 500 500" width="100%" style="bottom:-20px;z-index:-10;">
-        <g>
-            <defs>
-                <clipPath id="clip-path-id-viewbox-item-0">
-                    <rect x="0.0" y="0.0" width="2351.85" height="3016.6"/>
-                </clipPath>
-            </defs>
-            <g transform="translate(56.0 2.0) rotate(0.0 193.0 248.0) scale(0.16412611348512873 0.1644235231717828)">
-                <g clip-path="url(#clip-path-id-viewbox-item-0)" transform="translate(-0.0 -0.0)">
-                    <path
-                        d="M1385.35,2973.45c77.97,38.77,169.23,31.59,238.38-18.56c531.73-386.54,643.3-765.6,643.3-1015.46  c0-337.59-187-602.57-371.46-817.55c4.78,176.65-66.62,287.14-127.7,348.82c-67.21,67.82-136.96,93.12-137.56,93.42  c-0.9,0.3-1.79,0.15-2.39-0.45c-0.6-0.6-1.05-1.5-0.9-2.25c0.45-2.54,42.72-258.09,42.72-454.06  c0-402.41-192.98-677.87-354.73-838.06C1158.46,114.65,1000.44,34.71,966.39,18.39c14.49,27.55,67.81,136.68,67.81,255.1  c0,217.07-184.31,415.59-397.75,645.38c-260.34,280.4-555.33,598.08-555.33,1020.55c0,240.73,111.27,611.1,641.06,1008.27  c68.71,51.5,160.27,59.58,239.13,21.11c68.26-33.38,109.93-95.06,111.57-164.98l1.79-81.89c0.3-14.52-4.48-28.74-13.89-41.17  C838.53,2386.3,841.67,2307.4,846.6,2187.94c0.45-11.53,0.9-23.35,1.19-35.78c3.14-135.19,79.76-715.45,88.57-781.17  c0.6-4.49,5.08-7.78,10.31-7.78h18.67c2.99,0,5.97,1.2,7.92,3.14c1.64,1.65,2.54,3.59,2.54,5.84l-3.29,775.78  c0,6.29,2.84,12.58,8.07,17.37c6.87,6.44,16.58,9.58,26.89,8.98c3.58-0.3,7.17-0.9,11.05-1.8c9.86-2.54,16.73-9.73,17.18-17.81  l37.79-782.67c0.3-4.79,4.78-8.53,10.31-8.53h13.44c5.68,0,10.16,3.74,10.31,8.53c1.05,24.85,26.74,610.65,26.74,713.8  c0,61.23,11.65,83.24,21.36,90.87c5.97,4.64,10.75,3.59,10.9,3.44c0.15,0,0.45,0,0.6,0h14.34c0.15,0,0.45,0,0.6,0.15  c0.15,0,5.08,1.2,10.9-3.44c9.71-7.64,21.36-29.64,21.36-90.87c0-97.31,22.25-611.7,26.74-713.8c0.15-4.79,4.78-8.53,10.31-8.53  h13.44c5.53,0,10.16,3.74,10.31,8.53l37.79,782.67c0.45,8.08,7.32,15.27,17.18,17.81c3.73,1.05,7.47,1.65,11.05,1.95  c10.31,0.75,20.01-2.54,26.89-8.83c5.23-4.79,8.07-11.08,8.07-17.37l-3.29-775.63c0-2.1,0.9-4.19,2.39-5.84  c1.94-1.95,4.93-3.14,7.92-3.14h18.67c5.23,0,9.71,3.29,10.31,7.78c8.66,65.72,85.29,645.98,88.57,781.17  c0.3,12.43,0.75,24.25,1.2,35.78c4.93,119.47,8.07,198.36-214.18,492.98c-9.41,12.43-14.19,26.65-13.89,41.32l1.94,87.43  C1276.91,2878.68,1317.98,2940.06,1385.35,2973.45z"
-                        style="fill:#EAE9EB;"
-                    ></path>
-                </g>
-            </g>
-        </g>
-    </svg>
-</div>
+<div>
+    <h1 class="text-2xl font-bold text-slate-900"><?= lang('text_start_heading'); ?></h1>
+    <p class="mt-2 text-slate-600"><?= lang('text_start_sub_heading'); ?></p>
 
-<div class="text-center py-5">
-    <button
-        type="submit"
-        class="btn btn-primary btn-lg"
-        data-install-control="load-license"
-    >Install TastyIgniter</button>
+    <div class="mt-8">
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-semibold text-slate-900"><?= lang('text_requirement_heading'); ?></h2>
+                <p class="mt-1 text-sm text-slate-500"><?= lang('text_requirement_sub_heading'); ?></p>
+            </div>
+        </div>
+
+        <div class="requirement-list mt-4">
+            <div class="requirement-list-header">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">System scan</span>
+                    <span class="requirement-progress-label" data-requirement-progress>Checking&hellip;</span>
+                </div>
+                <div class="requirement-progress-track">
+                    <div class="requirement-progress-fill" data-requirement-progress-fill style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="requirement-list-body">
+                <?php
+                $requirementIcons = [
+                    'php' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>',
+                    'extensions' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>',
+                    'pdo' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 7h6M9 11h6M9 15h4"/>',
+                    'curl' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"/>',
+                    'zip' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>',
+                    'network' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01M3 12a9 9 0 1118 0"/>',
+                    'writable' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>',
+                    'memory_limit' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
+                    'max_execution_time' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                ];
+                foreach (RequirementChecker::definitions() as $code => $requirement) {
+                    $iconPath = $requirementIcons[$code] ?? $requirementIcons['extensions'];
+                    $isWarning = !empty($requirement['warning']);
+                ?>
+                    <div class="requirement-row<?= $isWarning ? ' requirement-row-warning' : '' ?>" data-requirement="<?= $code; ?>">
+                        <div class="requirement-icon">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><?= $iconPath ?></svg>
+                        </div>
+                        <div class="requirement-content">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="requirement-label"><?= lang($requirement['label']); ?></p>
+                                <?php if ($isWarning) { ?>
+                                    <span class="requirement-badge">Recommended</span>
+                                <?php } ?>
+                            </div>
+                            <p class="requirement-hint hint-links"><?= lang($requirement['hint']); ?></p>
+                        </div>
+                        <div class="requirement-status" data-status-icon aria-hidden="true">
+                            <span class="requirement-status-dot"></span>
+                        </div>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+
+        <div id="requirement-check-result" class="hidden"></div>
+    </div>
+
+    <div class="mt-6 setup-panel">
+        <h2 class="text-sm font-semibold text-slate-900"><?= lang('text_license_heading'); ?></h2>
+        <p class="mt-2 text-sm text-slate-600"><?= lang('text_license_sub_heading'); ?></p>
+        <label class="mt-4 flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" name="license_agreed" value="accepted" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand focus:ring-offset-0" required>
+            <span class="text-sm text-slate-700 leading-relaxed"><?= lang('text_license_agreed'); ?></span>
+        </label>
+        <button type="button" @click="openLicense()" class="mt-3 text-sm text-brand hover:underline cursor-pointer">
+            <?= lang('text_view_license'); ?>
+        </button>
+    </div>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+        <button type="submit" id="continue-btn" disabled class="setup-btn setup-btn-primary opacity-50 cursor-not-allowed">
+            <?= lang('button_continue'); ?>
+        </button>
+    </div>
 </div>
