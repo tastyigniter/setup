@@ -9,7 +9,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",
     "tailwindcss": "^4.1.8",
-    "vite": "^6.3.5"
+    "vite": "^6.4.5"
   },
   "dependencies": {
     "alpinejs": "^3.14.9"
